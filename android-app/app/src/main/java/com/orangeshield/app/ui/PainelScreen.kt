@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -213,12 +214,15 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
                 text = value,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
-                color = OrangePrimary
+                color = OrangePrimary,
+                maxLines = 1
             )
             Text(
                 text = label,
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -240,13 +244,16 @@ private fun StatusRow(label: String, status: String, active: Boolean) {
         Text(
             text = label,
             fontSize = 13.sp,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
         Text(
             text = status,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
-            color = statusColor
+            color = statusColor,
+            maxLines = 1
         )
     }
 }

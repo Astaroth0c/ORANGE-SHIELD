@@ -42,6 +42,9 @@ import java.util.Locale
  * ORANGE SHIELD — aba WhatsApp.
  * Status do acesso a notificações, nota de limitação (bloqueio manual via
  * wa.me) e o histórico das mensagens analisadas pelo Guardião.
+ *
+ * Layout: um único LazyColumn rola o cartão de status junto com o histórico,
+ * garantindo que nada fique cortado em telas pequenas.
  */
 @Composable
 fun WhatsAppScreen() {
@@ -58,13 +61,12 @@ fun WhatsAppScreen() {
     val listenerEnabled = remember(resumeTick) { Notifier.isNotificationListenerEnabled(context) }
     val timeFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item(key = "guardiao-header") {
             ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -81,7 +83,8 @@ fun WhatsAppScreen() {
                     ) {
                         Text(
                             text = "Acesso a notificações:",
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Text(
                             text = if (listenerEnabled) "concedido" else "pendente",
@@ -118,34 +121,30 @@ fun WhatsAppScreen() {
             }
         }
 
-        Text(
-            text = "Histórico recente (${events.size})",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-
-        if (events.isEmpty()) {
+        item(key = "historico-titulo") {
             Text(
-                text = "Nenhuma mensagem analisada ainda. Conceda o acesso a notificações e aguarde mensagens do WhatsApp.",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp)
+                text = "Histórico recente (${events.size})",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
             )
         }
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(events, key = { it.id }) { event ->
-                WhatsAppEventRow(event = event, timeFormat = timeFormat)
+        if (events.isEmpty()) {
+            item(key = "historico-vazio") {
+                Text(
+                    text = "Nenhuma mensagem analisada ainda. Conceda o acesso a notificações e aguarde mensagens do WhatsApp.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+        }
+
+        items(events, key = { it.id }) { event ->
+            WhatsAppEventRow(event = event, timeFormat = timeFormat)
+        }
+
+        item(key = "espaco-final") {
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -186,7 +185,8 @@ private fun WhatsAppEventRow(
                         text = label,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
                     )
                 }
             }
@@ -202,18 +202,22 @@ private fun WhatsAppEventRow(
                     text = "Risco ${event.riskScore}/100",
                     fontSize = 11.sp,
                     color = color,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
                 )
                 Text(
                     text = timeFormat.format(Date(event.occurredAt)),
                     fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
             }
             Text(
                 text = event.reason,
                 fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Escudo escuro centralizado na zona segura do ícone adaptativo (108dp) -->
+    <path
+        android:fillColor="#09090B"
+        android:pathData="M54,18 L27,30 v18 c0,16.65 11.52,32.22 27,36 15.48,-3.78 27,-19.35 27,-36 V30 L54,18 z" />
+    <!-- Marca de verificação branca -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,58.51 l-9.51,-9.51 -4.23,4.23 L48,67 l21,-21 -4.23,-4.23 z" />
+</vector>
