@@ -1,7 +1,6 @@
 package com.orangeshield.app.screening
 
 import android.telecom.Call
-import android.telecom.CallResponse
 import android.telecom.CallScreeningService
 import com.orangeshield.app.EngineProvider
 import com.orangeshield.app.engine.CallDecision
@@ -51,7 +50,7 @@ class CallScreeningServiceImpl : CallScreeningService() {
             }
 
             val block = analysis?.decision == CallDecision.BLOCK
-            val response = CallResponse.Builder()
+            val response = CallScreeningService.CallResponse.Builder()
                 .setDisallowCall(block)
                 .setRejectCall(block)
                 .setSkipCallLog(false) // chamadas bloqueadas continuam no registro de chamadas
@@ -77,7 +76,7 @@ class CallScreeningServiceImpl : CallScreeningService() {
         } catch (_: Exception) {
             // Falha na triagem NUNCA bloqueia: responde permitindo a chamada.
             try {
-                respondToCall(callDetails, CallResponse.Builder().build())
+                respondToCall(callDetails, CallScreeningService.CallResponse.Builder().build())
             } catch (_: Exception) {
                 // Ignora: sem resposta possível nesta rodada.
             }

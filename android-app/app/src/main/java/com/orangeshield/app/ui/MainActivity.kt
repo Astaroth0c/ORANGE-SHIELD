@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
@@ -23,11 +24,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,7 +40,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.orangeshield.app.EngineProvider
-import com.orangeshield.app.engine.DEFAULT_SETTINGS
 import kotlinx.coroutines.launch
 
 /**
@@ -66,7 +69,7 @@ private data class NavItem(
 
 private val NAV_ITEMS = listOf(
     NavItem("painel", "Painel", Icons.Filled.Shield),
-    NavItem("simulador", "Simulador", Icons.Filled.PhoneInTalk),
+    NavItem("analise", "Análise", Icons.Filled.PhoneInTalk),
     NavItem("listas", "Listas", Icons.Filled.Block),
     NavItem("whatsapp", "WhatsApp", Icons.Filled.Chat)
 )
@@ -81,6 +84,16 @@ fun OrangeShieldApp() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: "painel"
 
+    // Versão do app lida do PackageManager (sem texto fixo no código).
+    val context = LocalContext.current
+    val appVersion = remember {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "?"
+        } catch (_: Exception) {
+            "?"
+        }
+    }
+
     // Carrega as configurações persistidas (SharedPreferences) uma vez.
     LaunchedEffect(Unit) { store.load() }
 
@@ -88,38 +101,43 @@ fun OrangeShieldApp() {
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = "ORANGE SHIELD",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = OrangePrimary
-                        )
-                        Text(
-                            text = "Motor anti-spoofing v0.7.0 · regras ${settings.ruleVersion}",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                actions = {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(end = 16.dp)
-                    ) {
-                        Text(
-                            text = "Proteção",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Switch(
-                            checked = settings.protectionActive,
-                            onCheckedChange = { checked ->
-                                scope.launch {
-                                    store.save(settings.copy(protectionActive = checked))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "ORANGE SHIELD",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = OrangePrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "Motor anti-spoofing v$appVersion · regras ${settings.ruleVersion}",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(start = 12.dp, end = 8.dp)
+                        ) {
+                            Text(
+                                text = "Proteção",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                            Switch(
+                                checked = settings.protectionActive,
+                                onCheckedChange = { checked ->
+                                    scope.launch {
+                                        store.save(settings.copy(protectionActive = checked))
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             )
@@ -151,7 +169,7 @@ fun OrangeShieldApp() {
             modifier = Modifier.padding(padding)
         ) {
             composable("painel") { PainelScreen() }
-            composable("simulador") { SimuladorScreen() }
+            composable("analise") { AnaliseScreen() }
             composable("listas") { ListasScreen() }
             composable("whatsapp") { WhatsAppScreen() }
         }

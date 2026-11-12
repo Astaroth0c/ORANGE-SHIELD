@@ -34,7 +34,18 @@ class CallRuleEngine(
     private val spoofDetector: SpoofDetector
 ) {
 
-    suspend fun analyzeIncomingCall(rawNumber: String, settings: EngineSettings): CallAnalysis {
+    /**
+     * Analisa uma chamada com o motor completo.
+     *
+     * @param record quando false, a análise é somente leitura (usada pela aba
+     *   Análise da UI): nada é gravado em call_events, portanto a análise manual
+     *   NÃO polui o histórico real de triagens nem as estatísticas do Painel.
+     */
+    suspend fun analyzeIncomingCall(
+        rawNumber: String,
+        settings: EngineSettings,
+        record: Boolean = true
+    ): CallAnalysis {
         val e164 = normalizePhone(rawNumber)
         val steps = mutableListOf<EngineStep>()
         val evidences = mutableListOf<EngineEvidence>()
@@ -280,18 +291,21 @@ class CallRuleEngine(
         }
 
         // ------------------------------------------------------------------
-        // 6. Registro (trilha de auditoria)
+        // 6. Registro (trilha de auditoria) — somente para chamadas reais.
+        //    A análise manual da UI usa record = false (somente leitura).
         // ------------------------------------------------------------------
-        recordCallEvent(
-            e164 = e164,
-            decision = decision,
-            riskScore = score,
-            category = category,
-            evidences = evidences.toList(),
-            reason = reason,
-            spoofFlags = spoofFlags.toList(),
-            settings = settings
-        )
+        if (record) {
+            recordCallEvent(
+                e164 = e164,
+                decision = decision,
+                riskScore = score,
+                category = category,
+                evidences = evidences.toList(),
+                reason = reason,
+                spoofFlags = spoofFlags.toList(),
+                settings = settings
+            )
+        }
 
         return CallAnalysis(
             e164 = e164,

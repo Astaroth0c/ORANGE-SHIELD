@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -38,6 +41,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.orangeshield.app.EngineProvider
@@ -55,14 +60,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * ORANGE SHIELD — aba Simulador.
- * Roda o SmartCall Engine local (Call Guard + Spoof Detector) sobre um
- * número digitado e exibe a decisão, o score de risco, a linha do tempo de
- * passos, as evidências e o pipeline de spoofing em 4 passos.
+ * ORANGE SHIELD — aba Análise.
+ *
+ * Roda o SmartCall Engine local (Call Guard + Spoof Detector) sobre um número
+ * informado pelo usuário e exibe a decisão, o score de risco, a linha do tempo
+ * de passos, as evidências e o pipeline de spoofing em 4 passos.
+ *
+ * IMPORTANTE: a análise é SOMENTE LEITURA (record = false) — nada é gravado
+ * no histórico de triagens nem nas estatísticas do Painel. O histórico do
+ * Painel contém apenas chamadas reais processadas pelo aparelho.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SimuladorScreen() {
+fun AnaliseScreen() {
     val scope = rememberCoroutineScope()
     val store = EngineProvider.settingsStore
 
@@ -76,12 +86,14 @@ fun SimuladorScreen() {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .imePadding()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Simulador de chamadas", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text("Análise de número", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text(
-            "Digite um número (ex.: +55 11 99999-9999, 0303…, 00 1 555 123 4567 ou remetente alfanumérico como CLARO) e rode o motor local.",
+            "Digite um número e rode o motor local completo (4 passos). " +
+                "A análise é somente leitura: nada é registrado no histórico de chamadas.",
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -92,7 +104,11 @@ fun SimuladorScreen() {
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             label = { Text("Número do chamador") },
-            enabled = !loading
+            enabled = !loading,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = { errorMessage?.let { } }
+            )
         )
 
         Button(
@@ -107,9 +123,12 @@ fun SimuladorScreen() {
                     try {
                         val settings = store.load()
                         val analysis = withContext(Dispatchers.Default) {
-                            EngineProvider.callEngine.analyzeIncomingCall(number, settings)
+                            EngineProvider.callEngine.analyzeIncomingCall(
+                                number,
+                                settings,
+                                record = false
+                            )
                         }
-                        // Análise de spoofing separada para renderizar os 4 passos detalhados.
                         val spoofAnalysis = withContext(Dispatchers.Default) {
                             EngineProvider.spoofDetector.analyzeSpoofing(analysis.e164, settings.ownNumber)
                         }
@@ -125,7 +144,7 @@ fun SimuladorScreen() {
             enabled = !loading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (loading) "Analisando…" else "Analisar chamada")
+            Text(if (loading) "Analisando…" else "Analisar número")
         }
 
         errorMessage?.let { message ->
@@ -153,7 +172,9 @@ fun SimuladorScreen() {
             Text(
                 text = "Número normalizado: ${analysis.e164.ifEmpty { "inválido" }}",
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(text = analysis.reason, fontSize = 13.sp)
             if (analysis.category != "unknown") {
@@ -201,6 +222,8 @@ fun SimuladorScreen() {
             )
             spoofAnalysis.steps.forEach { step -> SpoofStepCard(step) }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
@@ -370,14 +393,17 @@ private fun CheckRow(check: SpoofCheck) {
                     text = check.label,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 if (check.status == SpoofStatus.FLAGGED) {
                     Text(
                         text = "+${check.points} pts",
                         fontSize = 12.sp,
                         color = RedBlock,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 8.dp)
                     )
                 }
             }
