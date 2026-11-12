@@ -1,15 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { usePatchSettings, useSettings } from "@/hooks/use-orange-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api-client";
 import {
   Ban,
+  DatabaseBackup,
+  Download,
   Fingerprint,
   Globe,
   Info,
@@ -22,6 +36,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Smartphone,
+  Upload,
   UserRoundX,
   Users,
 } from "lucide-react";
@@ -93,7 +108,11 @@ export function Rules() {
   const { data: settings, isLoading } = useSettings();
   const patch = usePatchSettings();
   const { toast } = useToast();
+  const qc = useQueryClient();
   const [ownInput, setOwnInput] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingRestore, setPendingRestore] = useState<{ name: string; payload: Record<string, unknown> } | null>(null);
+  const [restoring, setRestoring] = useState(false);
 
   if (isLoading || !settings) {
     return (
@@ -111,6 +130,74 @@ export function Rules() {
       onSuccess: () => toast({ title: msg }),
       onError: (e) => toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" }),
     });
+  };
+
+  // ---- Backup & portability (v0.5.0) ------------------------------
+  const exportBackup = async () => {
+    try {
+      const payload = await api.get<Record<string, unknown>>("/api/backup");
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `orange-shield-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Backup exportado", description: "JSON gerado com todos os dados de proteção" });
+    } catch (e) {
+      toast({
+        title: "Erro ao exportar",
+        description: e instanceof Error ? e.message : "tente novamente",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const onFileSelected = (file: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const payload = JSON.parse(String(reader.result)) as Record<string, unknown>;
+        if (payload?.app !== "ORANGE SHIELD" || payload?.schemaVersion !== 1) {
+          toast({
+            title: "Backup inválido",
+            description: "Envelope ORANGE SHIELD (schemaVersion 1) não reconhecido",
+            variant: "destructive",
+          });
+          return;
+        }
+        setPendingRestore({ name: file.name, payload });
+      } catch {
+        toast({ title: "JSON inválido", description: "Não foi possível ler o arquivo", variant: "destructive" });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const confirmRestore = async () => {
+    if (!pendingRestore) return;
+    setRestoring(true);
+    try {
+      const res = await api.post<{
+        restored: boolean;
+        counts: Record<string, number>;
+      }>("/api/backup", pendingRestore.payload);
+      toast({
+        title: "Backup restaurado",
+        description: `${res.counts.callEvents} chamadas · ${res.counts.smsMessages} SMS · ${res.counts.whatsappMessages} WhatsApp · ${res.counts.blockedNumbers} bloqueados`,
+      });
+      setPendingRestore(null);
+      qc.invalidateQueries();
+    } catch (e) {
+      toast({
+        title: "Erro ao restaurar",
+        description: e instanceof Error ? e.message : "tente novamente",
+        variant: "destructive",
+      });
+    } finally {
+      setRestoring(false);
+    }
   };
 
   return (
@@ -351,6 +438,89 @@ export function Rules() {
             spoofing provável; evidências entram na pontuação do SmartCall Engine.
           </p>
         </div>
+      </section>
+
+      {/* Backup & portability (v0.5.0) */}
+      <section className="glass space-y-4 rounded-2xl p-5 lg:col-span-2" aria-label="Backup de dados">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-300">
+              <DatabaseBackup className="size-4 text-orange-400" /> Backup de dados
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              Portabilidade total: exporta configurações, listas, inteligência e histórico dos
+              quatro engines em um único arquivo JSON — restaure em qualquer instalação.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={exportBackup}
+              variant="outline"
+              className="border-white/12 hover:border-orange-500/40 hover:text-orange-300"
+            >
+              <Download className="size-4" /> Exportar backup
+            </Button>
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={restoring}
+              className="bg-orange-500 text-white hover:bg-orange-600"
+            >
+              <Upload className="size-4" /> {restoring ? "Restaurando..." : "Restaurar backup"}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => {
+                onFileSelected(e.target.files?.[0] ?? null);
+                e.target.value = "";
+              }}
+              aria-hidden="true"
+              tabIndex={-1}
+            />
+          </div>
+        </div>
+        <div className="rounded-xl border border-white/8 bg-white/3 px-4 py-3">
+          <p className="text-xs leading-relaxed text-zinc-400">
+            <strong className="text-zinc-300">Incluído:</strong> limites e regras do motor, número
+            de referência anti-spoofing, listas de bloqueio/autorização, base de números e
+            reputação, padrões de spam, regras de operadoras, denúncias e todos os eventos de
+            chamadas, SMS e WhatsApp com evidências. <strong className="text-amber-300">Atenção:</strong>{" "}
+            restaurar substitui todos os dados atuais pelos do arquivo.
+          </p>
+        </div>
+
+        <AlertDialog open={!!pendingRestore} onOpenChange={(o) => !o && setPendingRestore(null)}>
+          <AlertDialogContent className="border-white/10 bg-zinc-950">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restaurar backup?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingRestore && (
+                  <>
+                    O arquivo <span className="font-mono text-zinc-300">{pendingRestore.name}</span>{" "}
+                    será aplicado e <strong className="text-amber-300">todos os dados atuais serão
+                    substituídos</strong>. Esta ação não pode ser desfeita — exporte um backup novo
+                    antes se necessário.
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={restoring}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  confirmRestore();
+                }}
+                disabled={restoring}
+                className="bg-orange-500 text-white hover:bg-orange-600"
+              >
+                {restoring ? "Restaurando..." : "Restaurar"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </section>
     </div>
   );
