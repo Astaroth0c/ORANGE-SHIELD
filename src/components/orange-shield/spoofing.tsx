@@ -5,6 +5,7 @@ import {
   usePatchSettings,
   useSettings,
   useSpoofAnalysis,
+  useSpoofHistory,
 } from "@/hooks/use-orange-data";
 import { SpoofAnalysisResponse, SpoofCheckResponse } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Fingerprint,
+  History,
   Info,
   Loader2,
   Radar,
@@ -64,6 +66,7 @@ export function SpoofDetector() {
   const { data: settings } = useSettings();
   const patch = usePatchSettings();
   const { data, isFetching } = useSpoofAnalysis(query?.n ?? null, query?.ts);
+  const { data: history } = useSpoofHistory();
 
   const ownNumber = settings?.ownNumber ?? "";
 
@@ -313,6 +316,87 @@ export function SpoofDetector() {
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {/* Spoof intelligence (v0.4.0): aggregated flags from the call history */}
+      {history && history.totalFlagged > 0 && (
+        <section className="glass rounded-2xl p-5" aria-label="Inteligência anti-spoofing">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-300">
+              <History className="size-4 text-orange-400" /> Inteligência anti-spoofing
+            </h2>
+            <div className="flex gap-2 text-[11px]">
+              <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 font-mono text-amber-300">
+                {history.totalFlagged} evento(s) com flags
+              </span>
+              <span className="rounded-full border border-red-500/25 bg-red-500/10 px-2.5 py-1 font-mono text-red-300">
+                {history.totalBlocked} bloqueado(s)
+              </span>
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div>
+              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                Técnicas detectadas no seu tráfego
+              </p>
+              <div className="space-y-2">
+                {history.distribution.map((d) => {
+                  const max = Math.max(...history.distribution.map((x) => x.count));
+                  return (
+                    <div key={d.code} className="flex items-center gap-2.5">
+                      <span className="w-44 shrink-0 truncate text-xs text-zinc-300" title={d.label}>
+                        {d.label}
+                      </span>
+                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/8">
+                        <div
+                          className="h-full rounded-full bg-orange-500 transition-all duration-700"
+                          style={{ width: `${Math.max(8, (d.count / max) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="w-6 shrink-0 text-right font-mono text-xs font-semibold">{d.count}x</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                Últimos ataques com flag de spoofing
+              </p>
+              <div className="custom-scrollbar max-h-56 space-y-1.5 overflow-y-auto pr-1">
+                {history.recent.map((r, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg border border-white/6 bg-white/3 px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate font-mono text-xs font-medium">{r.formatted}</span>
+                      <span className="shrink-0 font-mono text-[10px] text-zinc-500">
+                        {formatDistanceToNow(new Date(r.occurredAt), { addSuffix: true, locale: ptBR })}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {r.flags.map((f, j) => (
+                        <span
+                          key={j}
+                          className="rounded bg-red-500/12 px-1.5 py-0.5 font-mono text-[9px] text-red-300"
+                          title={f.label}
+                        >
+                          {f.code} +{f.points}
+                        </span>
+                      ))}
+                      <span className="rounded bg-white/6 px-1.5 py-0.5 font-mono text-[9px] text-zinc-400">
+                        risco {r.riskScore} · {r.decision}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </section>
       )}
 

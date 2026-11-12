@@ -136,6 +136,21 @@ export interface SpoofAnalysisResponse {
   }[];
 }
 
+export interface SpoofHistoryResponse {
+  totalFlagged: number;
+  totalBlocked: number;
+  highestRisk: number;
+  distribution: { code: string; label: string; count: number; points: number }[];
+  recent: {
+    e164: string;
+    formatted: string;
+    decision: string;
+    riskScore: number;
+    flags: { code: string; label: string; points: number }[];
+    occurredAt: string;
+  }[];
+}
+
 export interface CallEventResponse {
   id: string;
   e164: string;

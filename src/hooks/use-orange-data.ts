@@ -10,6 +10,7 @@ export const queryKeys = {
   smsHistory: (filter: string) => ["history", "sms", filter] as const,
   waHistory: (filter: string) => ["history", "whatsapp", filter] as const,
   spoof: (query: string) => ["spoof", query] as const,
+  spoofHistory: ["spoof-history"] as const,
   blacklist: ["blacklist"] as const,
   whitelist: ["whitelist"] as const,
   patterns: ["patterns"] as const,
@@ -268,5 +269,12 @@ export function useSpoofAnalysis(query: string | null, nonce?: number) {
       api.get<import("@/lib/api-client").SpoofAnalysisResponse>(
         `/api/spoof?number=${encodeURIComponent(query!)}`
       ),
+  });
+}
+
+export function useSpoofHistory() {
+  return useQuery({
+    queryKey: queryKeys.spoofHistory,
+    queryFn: () => api.get<import("@/lib/api-client").SpoofHistoryResponse>("/api/spoof/history"),
   });
 }
