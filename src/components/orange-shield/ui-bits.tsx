@@ -70,6 +70,9 @@ export const CATEGORY_LABELS: Record<string, string> = {
   authentication: "Autenticação",
   service: "Serviço",
   personal: "Pessoal",
+  spoofing: "Spoofing",
+  phishing_code: "Phishing de código",
+  group_invite: "Convite de grupo",
 };
 
 export function CategoryChip({ category }: { category: string | null }) {

@@ -22,9 +22,16 @@ export async function PATCH(request: Request) {
     "blockUnknownNumbers",
     "silenceMode",
     "insistenceProtection",
+    "waProtect",
+    "waBlockUnknown",
+    "waBlockLinks",
+    "waBlockForwarded",
+    "waBlockCodePhish",
+    "waBlockGroupInvite",
+    "spoofProtection",
   ] as const;
 
-  const data: Record<string, boolean | number> = {};
+  const data: Record<string, boolean | number | string> = {};
   for (const key of allowed) {
     if (key in body) {
       if (key === "blockThreshold" || key === "warnThreshold") {
@@ -33,6 +40,10 @@ export async function PATCH(request: Request) {
         data[key] = Boolean(body[key]);
       }
     }
+  }
+  // Own number (for neighbor-spoof detection): digits only, max 15
+  if (typeof body.ownNumber === "string") {
+    data.ownNumber = body.ownNumber.replace(/\D/g, "").slice(0, 15);
   }
 
   const settings = await db.userSettings.upsert({

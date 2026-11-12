@@ -1,20 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import { usePatchSettings, useSettings } from "@/hooks/use-orange-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
+  Ban,
+  Fingerprint,
   Globe,
   Info,
+  Link2,
+  MessageCircle,
   MoonStar,
   PhoneMissed,
   Repeat2,
+  Share2,
   ShieldAlert,
   ShieldCheck,
   Smartphone,
   UserRoundX,
+  Users,
 } from "lucide-react";
 
 function ToggleRow({
@@ -84,6 +93,7 @@ export function Rules() {
   const { data: settings, isLoading } = useSettings();
   const patch = usePatchSettings();
   const { toast } = useToast();
+  const [ownInput, setOwnInput] = useState<string | null>(null);
 
   if (isLoading || !settings) {
     return (
@@ -96,7 +106,7 @@ export function Rules() {
     );
   }
 
-  const mutate = (data: Record<string, boolean | number>, msg: string) => {
+  const mutate = (data: Record<string, boolean | number | string>, msg: string) => {
     patch.mutate(data, {
       onSuccess: () => toast({ title: msg }),
       onError: (e) => toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" }),
@@ -238,6 +248,107 @@ export function Rules() {
           <p className="mt-0.5 text-xs text-zinc-400">
             Mensagens de autenticação (códigos, tokens, 2FA) nunca são descartadas — mesmo com
             links ou palavras comerciais. Quarentena sempre recuperável.
+          </p>
+        </div>
+      </section>
+      {/* WhatsApp rules */}
+      <section className="space-y-2.5" aria-label="Regras do WhatsApp">
+        <h3 className="px-1 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          WhatsApp Guard
+        </h3>
+        <ToggleRow
+          icon={<MessageCircle className="size-4" />}
+          title="WhatsApp Guard ativo"
+          description="Filtragem de mensagens recebidas fora dos contatos"
+          checked={settings.waProtect}
+          onChange={(v) => mutate({ waProtect: v }, "WhatsApp Guard atualizado")}
+          disabled={patch.isPending}
+        />
+        <ToggleRow
+          icon={<ShieldCheck className="size-4" />}
+          title="Phishing do código de 6 dígitos"
+          description="Bloqueia pedidos de código (sequestro de conta) (+80)"
+          checked={settings.waBlockCodePhish}
+          onChange={(v) => mutate({ waBlockCodePhish: v }, "Phishing de código atualizado")}
+          disabled={patch.isPending}
+        />
+        <ToggleRow
+          icon={<Link2 className="size-4" />}
+          title="Links de desconhecidos"
+          description="Encurtadores e TLDs de risco pesam +30; links de desconhecido +15"
+          checked={settings.waBlockLinks}
+          onChange={(v) => mutate({ waBlockLinks: v }, "Links atualizado")}
+          disabled={patch.isPending}
+        />
+        <ToggleRow
+          icon={<Share2 className="size-4" />}
+          title="Disparos encaminhados"
+          description={'Mensagens "encaminhada muitas vezes" pesam +25'}
+          checked={settings.waBlockForwarded}
+          onChange={(v) => mutate({ waBlockForwarded: v }, "Disparos atualizado")}
+          disabled={patch.isPending}
+        />
+        <ToggleRow
+          icon={<Users className="size-4" />}
+          title="Convites de grupo"
+          description="Convites de grupos de desconhecidos em quarentena (+35)"
+          checked={settings.waBlockGroupInvite}
+          onChange={(v) => mutate({ waBlockGroupInvite: v }, "Convites atualizado")}
+          disabled={patch.isPending}
+        />
+        <ToggleRow
+          icon={<Ban className="size-4" />}
+          title="Bloquear desconhecidos no WhatsApp"
+          description="Rigor máximo: só recebe de autorizados (+70)"
+          checked={settings.waBlockUnknown}
+          onChange={(v) => mutate({ waBlockUnknown: v }, "Desconhecidos WA atualizado")}
+          disabled={patch.isPending}
+        />
+      </section>
+
+      {/* Spoofing rules */}
+      <section className="space-y-2.5" aria-label="Regras anti-spoofing">
+        <h3 className="px-1 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+          Anti-Spoofing (Spoof Detector)
+        </h3>
+        <ToggleRow
+          icon={<Fingerprint className="size-4" />}
+          title="Detector de spoofing"
+          description="Neighbor spoofing, DDD inválido, formato impossível, Wangiri"
+          checked={settings.spoofProtection}
+          onChange={(v) => mutate({ spoofProtection: v }, "Detector de spoofing atualizado")}
+          disabled={patch.isPending}
+        />
+        <div className="rounded-xl border border-white/8 bg-white/3 px-4 py-3">
+          <p className="text-sm font-medium">Seu número (referência)</p>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            Usado para detectar chamadas que imitam o seu número (neighbor spoofing).
+          </p>
+          <div className="mt-2 flex gap-2">
+            <Input
+              value={ownInput ?? (settings.ownNumber ? `+${settings.ownNumber}` : "")}
+              onChange={(e) => setOwnInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && mutate({ ownNumber: ownInput ?? "" }, "Seu número atualizado")}
+              placeholder="+55 11 98765-4321"
+              className="font-mono"
+              aria-label="Seu número de telefone"
+            />
+            <Button
+              onClick={() => mutate({ ownNumber: ownInput ?? "" }, "Seu número atualizado")}
+              disabled={patch.isPending}
+              variant="outline"
+              className="shrink-0 border-white/12 hover:border-orange-500/40 hover:text-orange-300"
+            >
+              Salvar
+            </Button>
+          </div>
+        </div>
+        <div className="rounded-xl border border-orange-500/25 bg-orange-500/6 px-4 py-3">
+          <p className="text-sm font-medium text-orange-300">Pesos do Spoof Detector</p>
+          <p className="mt-0.5 text-xs text-zinc-400">
+            Neighbor spoofing +35 · DDD inexistente +30 · celular sem 9º dígito +25 · dígitos
+            repetidos +25 · sequência artificial +20 · Wangiri (rediscagem) +40. Score ≥ 55 =
+            spoofing provável; evidências entram na pontuação do SmartCall Engine.
           </p>
         </div>
       </section>

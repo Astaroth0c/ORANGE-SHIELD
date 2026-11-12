@@ -23,6 +23,14 @@ export async function engineSettings(): Promise<EngineSettings> {
     blockUnknownNumbers: s.blockUnknownNumbers,
     silenceMode: s.silenceMode,
     insistenceProtection: s.insistenceProtection,
+    waProtect: s.waProtect,
+    waBlockUnknown: s.waBlockUnknown,
+    waBlockLinks: s.waBlockLinks,
+    waBlockForwarded: s.waBlockForwarded,
+    waBlockCodePhish: s.waBlockCodePhish,
+    waBlockGroupInvite: s.waBlockGroupInvite,
+    spoofProtection: s.spoofProtection,
+    ownNumber: s.ownNumber ?? "",
     ruleVersion: s.ruleVersion ?? DEFAULT_SETTINGS.ruleVersion,
   };
 }

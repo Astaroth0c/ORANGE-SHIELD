@@ -24,6 +24,10 @@ export async function GET() {
     callsByCategory,
     smsByCategory,
     lastEvent,
+    blockedWa,
+    quarantinedWa,
+    spoofEvents,
+    spoofBlocked,
   ] = await Promise.all([
     db.callEvent.count({ where: { decision: "BLOCK" } }),
     db.smsMessage.count({ where: { decision: "BLOCK" } }),
@@ -50,6 +54,10 @@ export async function GET() {
       where: { decision: { in: ["BLOCK", "QUARANTINE"] } },
     }),
     db.callEvent.findFirst({ orderBy: { occurredAt: "desc" } }),
+    db.whatsAppMessage.count({ where: { decision: "BLOCK" } }),
+    db.whatsAppMessage.count({ where: { decision: "QUARANTINE" } }),
+    db.callEvent.count({ where: { category: "spoofing" } }),
+    db.callEvent.count({ where: { category: "spoofing", decision: "BLOCK" } }),
   ]);
 
   // Build 7-day series
@@ -78,6 +86,10 @@ export async function GET() {
     totalNumbers,
     knownNumbers,
     pendingReports,
+    blockedWa,
+    quarantinedWa,
+    spoofEvents,
+    spoofBlocked,
     days,
     callsByCategory: callsByCategory.map((c) => ({ category: c.category ?? "unknown", count: c._count._all })),
     smsByCategory: smsByCategory.map((c) => ({ category: c.category ?? "unknown", count: c._count._all })),

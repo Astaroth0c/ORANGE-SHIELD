@@ -24,6 +24,7 @@
 
 import { db } from "@/lib/db";
 import { isInternational, normalizePhone } from "./normalize";
+import { analyzeSpoofing } from "./spoof";
 import {
   clampScore,
   riskBand,
@@ -51,7 +52,6 @@ export const CALL_WEIGHTS = {
   INSISTENCE_HEAVY: 50,
   SHORTCODE: 25,
 } as const;
-
 /** Insistence thresholds: calls within the last 60 minutes. */
 const INSISTENCE_LIGHT_COUNT = 3;
 const INSISTENCE_HEAVY_COUNT = 6;
@@ -164,6 +164,31 @@ export async function analyzeIncomingCall(
     evidences.push({ label, points });
     score += points;
   };
+
+  // ------------------------------------------------------------------
+  // 4. Spoof Detector — caller ID manipulation (Engine 04)
+  // ------------------------------------------------------------------
+  const spoofFlags: { code: string; label: string; points: number }[] = [];
+  if (settings.spoofProtection) {
+    const spoof = await analyzeSpoofing(e164, settings.ownNumber);
+    const flagged = spoof.checks.filter((c) => c.status === "flagged");
+    spoofFlags.push(...flagged.map((f) => ({ code: f.code, label: f.label, points: f.points })));
+    if (flagged.length > 0) {
+      for (const f of flagged) add(f.label, f.points);
+      if (category === "unknown" && spoof.spoofScore >= 25) category = "spoofing";
+      steps.push({
+        step: "Detector de spoofing",
+        result: `${flagged.length} flag(s) — score de spoofing ${spoof.spoofScore}/100 (${spoof.verdictLabel})`,
+      });
+    } else {
+      steps.push({
+        step: "Detector de spoofing",
+        result: spoof.checks.some((c) => c.status === "info")
+          ? "Checagem parcial — caller ID sem indícios de manipulação"
+          : "Caller ID íntegro — todas as checagens passaram",
+      });
+    }
+  }
 
   // Anatel 0303 telemarketing prefix
   if (e164.startsWith("+550303")) {
@@ -301,7 +326,7 @@ export async function analyzeIncomingCall(
   // ------------------------------------------------------------------
   // 6. Record (audit trail)
   // ------------------------------------------------------------------
-  await recordCallEvent(e164, phoneRecord?.id ?? null, decision, score, category, evidences, reason, settings);
+  await recordCallEvent(e164, phoneRecord?.id ?? null, decision, score, category, evidences, reason, spoofFlags, settings);
 
   return { e164, decision, riskScore: score, category, evidences, steps, reason, ruleVersion: settings.ruleVersion };
 }
@@ -314,6 +339,7 @@ async function recordCallEvent(
   category: string,
   evidences: EngineEvidence[],
   reason: string,
+  spoofFlags: { code: string; label: string; points: number }[],
   settings: EngineSettings
 ) {
   await db.callEvent.create({
@@ -325,6 +351,7 @@ async function recordCallEvent(
       category: category || null,
       evidences: JSON.stringify(evidences),
       reason,
+      spoofFlags: JSON.stringify(spoofFlags),
       ruleVersion: settings.ruleVersion,
     },
   });

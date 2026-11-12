@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ShieldHeader } from "@/components/orange-shield/header";
 import { Dashboard } from "@/components/orange-shield/dashboard";
 import { Simulator } from "@/components/orange-shield/simulator";
+import { WhatsAppGuard } from "@/components/orange-shield/whatsapp";
+import { SpoofDetector } from "@/components/orange-shield/spoofing";
 import { Lookup } from "@/components/orange-shield/lookup";
 import { History } from "@/components/orange-shield/history";
 import { Lists } from "@/components/orange-shield/lists";
@@ -13,9 +15,11 @@ import { Reports } from "@/components/orange-shield/reports";
 import { cn } from "@/lib/utils";
 import {
   BarChart3,
+  Fingerprint,
   History as HistoryIcon,
   LayoutDashboard,
   ListFilter,
+  MessageCircle,
   PhoneCall,
   Radar,
   ShieldCheck,
@@ -26,6 +30,8 @@ import {
 const TABS = [
   { id: "dashboard", label: "Painel", icon: <LayoutDashboard className="size-4" /> },
   { id: "simulator", label: "Simulador", icon: <Radar className="size-4" /> },
+  { id: "whatsapp", label: "WhatsApp", icon: <MessageCircle className="size-4" /> },
+  { id: "spoof", label: "Anti-Spoofing", icon: <Fingerprint className="size-4" /> },
   { id: "lookup", label: "Identificação", icon: <ShieldCheck className="size-4" /> },
   { id: "history", label: "Histórico", icon: <HistoryIcon className="size-4" /> },
   { id: "lists", label: "Listas", icon: <ListFilter className="size-4" /> },
@@ -76,6 +82,24 @@ export default function Home() {
               description="Teste em tempo real como o SmartCall Engine e o SMS Guard classificam, pontuam e decidem sobre cada comunicação — a mesma lógica que roda localmente no aparelho (CallScreeningService / SMS Role)."
             />
             <Simulator />
+          </div>
+        )}
+        {tab === "whatsapp" && (
+          <div className="space-y-3">
+            <IntroBlock
+              title="WhatsApp Guard"
+              description="Lógica de bloqueio via WhatsApp: filtragem de mensagens de desconhecidos, phishing do código de 6 dígitos, falso parente/PIX, links suspeitos, disparos encaminhados e convites de grupo — com quarentena recuperável."
+            />
+            <WhatsAppGuard />
+          </div>
+        )}
+        {tab === "spoof" && (
+          <div className="space-y-3">
+            <IntroBlock
+              title="Identificador de spoofing"
+              description="Detecta caller ID manipulado: neighbor spoofing (imitação do seu número), DDDs inexistentes, formatos impossíveis, padrões sintéticos de dígitos e o esquema Wangiri de rediscagem."
+            />
+            <SpoofDetector />
           </div>
         )}
         {tab === "lookup" && (
@@ -142,7 +166,7 @@ export default function Home() {
           <p className="flex items-center gap-1.5">
             <PhoneCall className="size-3 text-orange-400" />
             <span className="font-semibold text-zinc-400">ORANGE SHIELD</span> · Smart Call &amp;
-            Message Protection · SmartCall Engine v1.0.0
+            Message Protection · WhatsApp Guard + Spoof Detector
           </p>
           <p>
             Bloqueio local sem internet · Lista autorizada tem prioridade · Proteção reversível ·

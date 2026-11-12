@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallHistory, useSettings, useSmsHistory, useStats } from "@/hooks/use-orange-data";
+import { useCallHistory, useSettings, useSmsHistory, useStats, useWhatsAppHistory } from "@/hooks/use-orange-data";
 import {
   CATEGORY_LABELS,
   DecisionBadge,
@@ -14,6 +14,8 @@ import {
   Ban,
   Database,
   FileWarning,
+  Fingerprint,
+  MessageCircle,
   MessageSquareOff,
   PhoneOff,
   ShieldCheck,
@@ -78,12 +80,15 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
   const { data: settings } = useSettings();
   const { data: recentCalls } = useCallHistory("ALL");
   const { data: recentSms } = useSmsHistory("ALL");
+  const { data: recentWa } = useWhatsAppHistory("ALL");
 
   const protections = [
     { key: "blockTelemarketing", label: "Bloqueio de telemarketing", description: "Prefixo 0303 e centrais comerciais" },
     { key: "blockRobocalls", label: "Bloqueio de robocalls", description: "Disparos automáticos identificados" },
     { key: "blockOperatorAds", label: "Filtro de SMS comercial", description: "Propaganda de operadoras em quarentena/bloqueio" },
     { key: "blockCollectors", label: "Proteção contra golpes", description: "Números confirmados como fraude" },
+    { key: "waProtect", label: "WhatsApp Guard", description: "Filtra mensagens e golpes no WhatsApp" },
+    { key: "spoofProtection", label: "Detector de spoofing", description: "Caller ID imitado/DDD inválido/Wangiri" },
   ] as const;
 
   const activeCount = protections.filter((p) => settings?.[p.key]).length;
@@ -106,9 +111,17 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
       reason: s.reason,
       occurredAt: s.occurredAt,
     })),
+    ...(recentWa ?? []).slice(0, 3).map((w) => ({
+      id: w.id,
+      kind: "whatsapp" as const,
+      title: w.sender,
+      decision: w.decision,
+      reason: w.reason,
+      occurredAt: w.occurredAt,
+    })),
   ]
     .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
-    .slice(0, 7);
+    .slice(0, 8);
 
   return (
     <div className="space-y-6">
@@ -133,11 +146,13 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Estatísticas de proteção">
           <StatCard icon={<PhoneOff className="size-5" />} value={stats?.blockedCalls ?? 0} label="Chamadas bloqueadas" />
           <StatCard icon={<MessageSquareOff className="size-5" />} value={stats?.blockedSms ?? 0} label="SMS bloqueados" accent="red" />
+          <StatCard icon={<MessageCircle className="size-5" />} value={stats?.blockedWa ?? 0} label="WhatsApp bloqueados" accent="green" />
           <StatCard icon={<Siren className="size-5" />} value={stats?.fraudCalls ?? 0} label="Golpes identificados" accent="red" />
+          <StatCard icon={<Fingerprint className="size-5" />} value={stats?.spoofEvents ?? 0} label="Spoofing detectado" accent="amber" />
           <StatCard icon={<Ban className="size-5" />} value={stats?.quarantinedSms ?? 0} label="SMS em quarentena" accent="amber" />
           <StatCard
             icon={<ShieldCheck className="size-5" />}
-            value={(stats?.blockedCalls24h ?? 0) + (stats?.blockedSms24h ?? 0)}
+            value={(stats?.blockedCalls24h ?? 0) + (stats?.blockedSms24h ?? 0) + (stats?.blockedWa ?? 0)}
             label="Bloqueios nas últimas 24h"
             accent="green"
           />
@@ -206,7 +221,7 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
                   <div className="flex items-center gap-2">
                     <span className="truncate font-mono text-sm font-medium">{item.title}</span>
                     <span className="rounded bg-white/6 px-1 py-0.5 text-[9px] uppercase tracking-wider text-zinc-500">
-                      {item.kind === "call" ? "Chamada" : "SMS"}
+                      {item.kind === "call" ? "Chamada" : item.kind === "whatsapp" ? "WhatsApp" : "SMS"}
                     </span>
                   </div>
                   <p className="truncate text-[11px] text-zinc-500">{item.reason}</p>

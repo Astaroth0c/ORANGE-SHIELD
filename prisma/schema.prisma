@@ -25,6 +25,7 @@ model PhoneNumber {
   reputation    NumberReputation?
   callEvents    CallEvent[]
   smsMessages   SmsMessage[]
+  whatsappMessages WhatsAppMessage[]
   reports       Report[]
 }
 
@@ -75,6 +76,7 @@ model CallEvent {
   category      String?
   evidences     String       @default("[]") // JSON [{label, points}]
   reason        String
+  spoofFlags    String       @default("[]") // JSON [{code,label,points}]
   ruleVersion   String       @default("v1.0.0")
   occurredAt    DateTime     @default(now())
 
@@ -92,6 +94,31 @@ model SmsMessage {
   category      String       @default("unknown") // advertising | billing | authentication | service | fraud | personal | unknown
   decision      String       // ALLOW | QUARANTINE | BLOCK
   riskScore     Int
+  evidences     String       @default("[]")
+  reason        String
+  occurredAt    DateTime     @default(now())
+
+  @@index([sender])
+  @@index([decision])
+  @@index([occurredAt])
+}
+
+// ============================================================
+// WHATSAPP (Engine 03 · WhatsApp Guard)
+// ============================================================
+
+model WhatsAppMessage {
+  id            String       @id @default(cuid())
+  sender        String
+  phoneNumberId String?
+  phoneNumber   PhoneNumber? @relation(fields: [phoneNumberId], references: [id])
+  content       String
+  category      String       @default("unknown") // personal | advertising | fraud | phishing_code | group_invite | spoofing | service | unknown | blacklisted
+  decision      String       // ALLOW | QUARANTINE | BLOCK
+  riskScore     Int
+  forwardedMany Boolean      @default(false)
+  hasLink       Boolean      @default(false)
+  isGroupInvite Boolean      @default(false)
   evidences     String       @default("[]")
   reason        String
   occurredAt    DateTime     @default(now())
@@ -160,6 +187,16 @@ model UserSettings {
   blockUnknownNumbers   Boolean  @default(false)
   silenceMode           Boolean  @default(false)
   insistenceProtection  Boolean  @default(true)
+  // WhatsApp Guard (Engine 03)
+  waProtect             Boolean  @default(true)
+  waBlockUnknown        Boolean  @default(false)
+  waBlockLinks          Boolean  @default(true)
+  waBlockForwarded      Boolean  @default(true)
+  waBlockCodePhish      Boolean  @default(true)
+  waBlockGroupInvite    Boolean  @default(false)
+  // Spoof Detector (Engine 04)
+  spoofProtection       Boolean  @default(true)
+  ownNumber             String   @default("")
   ruleVersion           String   @default("v1.0.0")
   updatedAt             DateTime @updatedAt
 }

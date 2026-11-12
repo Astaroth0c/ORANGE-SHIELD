@@ -50,6 +50,16 @@ export interface EngineSettings {
   blockUnknownNumbers: boolean;
   silenceMode: boolean;
   insistenceProtection: boolean;
+  // WhatsApp Guard (Engine 03)
+  waProtect: boolean;
+  waBlockUnknown: boolean;
+  waBlockLinks: boolean;
+  waBlockForwarded: boolean;
+  waBlockCodePhish: boolean;
+  waBlockGroupInvite: boolean;
+  // Spoof Detector (Engine 04)
+  spoofProtection: boolean;
+  ownNumber: string;
   ruleVersion: string;
 }
 
@@ -65,7 +75,15 @@ export const DEFAULT_SETTINGS: EngineSettings = {
   blockUnknownNumbers: false,
   silenceMode: false,
   insistenceProtection: true,
-  ruleVersion: "v1.0.0",
+  waProtect: true,
+  waBlockUnknown: false,
+  waBlockLinks: true,
+  waBlockForwarded: true,
+  waBlockCodePhish: true,
+  waBlockGroupInvite: false,
+  spoofProtection: true,
+  ownNumber: "",
+  ruleVersion: "v1.1.0",
 };
 
 export function clampScore(score: number): number {

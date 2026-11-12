@@ -13,6 +13,10 @@ export interface StatsResponse {
   totalNumbers: number;
   knownNumbers: number;
   pendingReports: number;
+  blockedWa: number;
+  quarantinedWa: number;
+  spoofEvents: number;
+  spoofBlocked: number;
   days: { day: string; blocked: number; allowed: number }[];
   callsByCategory: { category: string; count: number }[];
   smsByCategory: { category: string; count: number }[];
@@ -32,6 +36,14 @@ export interface SettingsResponse {
   blockUnknownNumbers: boolean;
   silenceMode: boolean;
   insistenceProtection: boolean;
+  waProtect: boolean;
+  waBlockUnknown: boolean;
+  waBlockLinks: boolean;
+  waBlockForwarded: boolean;
+  waBlockCodePhish: boolean;
+  waBlockGroupInvite: boolean;
+  spoofProtection: boolean;
+  ownNumber: string;
   ruleVersion: string;
 }
 
@@ -66,6 +78,58 @@ export interface SmsAnalysisResponse {
   reason: string;
 }
 
+export interface SpoofCheckResponse {
+  code: string;
+  label: string;
+  detail: string;
+  points: number;
+  status: "pass" | "flagged" | "info";
+}
+
+export interface WhatsAppAnalysisResponse {
+  sender: string;
+  decision: "ALLOW" | "QUARANTINE" | "BLOCK";
+  riskScore: number;
+  category: string;
+  evidences: EngineEvidence[];
+  steps: EngineStep[];
+  reason: string;
+  spoofChecks: SpoofCheckResponse[];
+}
+
+export interface WhatsAppEventResponse {
+  id: string;
+  sender: string;
+  content: string;
+  decision: "ALLOW" | "QUARANTINE" | "BLOCK";
+  riskScore: number;
+  category: string;
+  forwardedMany: boolean;
+  hasLink: boolean;
+  isGroupInvite: boolean;
+  evidences: EngineEvidence[];
+  reason: string;
+  occurredAt: string;
+  classification: string | null;
+}
+
+export interface SpoofAnalysisResponse {
+  e164: string;
+  formatted: string;
+  ownNumberConfigured: boolean;
+  checks: SpoofCheckResponse[];
+  spoofScore: number;
+  verdict: "clean" | "suspicious" | "spoof_likely";
+  verdictLabel: string;
+  recentEvents: {
+    decision: string;
+    riskScore: number;
+    reason: string;
+    occurredAt: string;
+    spoofFlags: { code: string; label: string; points: number }[];
+  }[];
+}
+
 export interface CallEventResponse {
   id: string;
   e164: string;
@@ -73,6 +137,7 @@ export interface CallEventResponse {
   riskScore: number;
   category: string | null;
   evidences: EngineEvidence[];
+  spoofFlags: { code: string; label: string; points: number }[];
   reason: string;
   ruleVersion: string;
   occurredAt: string;

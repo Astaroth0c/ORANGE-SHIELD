@@ -8,6 +8,8 @@ export const queryKeys = {
   settings: ["settings"] as const,
   callHistory: (filter: string) => ["history", "calls", filter] as const,
   smsHistory: (filter: string) => ["history", "sms", filter] as const,
+  waHistory: (filter: string) => ["history", "whatsapp", filter] as const,
+  spoof: (query: string) => ["spoof", query] as const,
   blacklist: ["blacklist"] as const,
   whitelist: ["whitelist"] as const,
   patterns: ["patterns"] as const,
@@ -218,5 +220,53 @@ export function useSimulateSms() {
       qc.invalidateQueries({ queryKey: ["history"] });
       qc.invalidateQueries({ queryKey: queryKeys.stats });
     },
+  });
+}
+
+export function useSimulateWhatsApp() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      sender: string;
+      content: string;
+      forwardedMany?: boolean;
+      isGroupInvite?: boolean;
+    }) => api.post<import("@/lib/api-client").WhatsAppAnalysisResponse>("/api/engine/whatsapp", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["history"] });
+      qc.invalidateQueries({ queryKey: queryKeys.stats });
+    },
+  });
+}
+
+export function useWhatsAppHistory(filter: string) {
+  return useQuery({
+    queryKey: queryKeys.waHistory(filter),
+    queryFn: () =>
+      api.get<import("@/lib/api-client").WhatsAppEventResponse[]>(
+        `/api/history/whatsapp${filter !== "ALL" ? `?decision=${filter}` : ""}`
+      ),
+  });
+}
+
+export function useClearWhatsAppHistory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.del("/api/history/whatsapp"),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["history"] });
+      qc.invalidateQueries({ queryKey: queryKeys.stats });
+    },
+  });
+}
+
+export function useSpoofAnalysis(query: string | null, nonce?: number) {
+  return useQuery({
+    queryKey: [...queryKeys.spoof(query ?? ""), nonce ?? 0],
+    enabled: !!query,
+    queryFn: () =>
+      api.get<import("@/lib/api-client").SpoofAnalysisResponse>(
+        `/api/spoof?number=${encodeURIComponent(query!)}`
+      ),
   });
 }

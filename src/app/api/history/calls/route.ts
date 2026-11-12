@@ -24,6 +24,7 @@ export async function GET(request: Request) {
       riskScore: e.riskScore,
       category: e.category,
       evidences: JSON.parse(e.evidences ?? "[]"),
+      spoofFlags: JSON.parse(e.spoofFlags ?? "[]"),
       reason: e.reason,
       ruleVersion: e.ruleVersion,
       occurredAt: e.occurredAt,
