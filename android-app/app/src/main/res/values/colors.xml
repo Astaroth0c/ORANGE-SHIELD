@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Paleta escura do ORANGE SHIELD (consistente com o tema Compose) -->
+    <color name="window_background">#09090B</color>
+    <color name="orange_primary">#F97316</color>
+    <color name="surface_dark">#18181B</color>
+</resources>

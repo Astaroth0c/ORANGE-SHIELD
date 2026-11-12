@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Escudo laranja (#F97316) com marca de verificação escura -->
+    <path
+        android:fillColor="#F97316"
+        android:pathData="M12,1L3,5v6c0,5.55 3.84,10.74 9,12 5.16,-1.26 9,-6.45 9,-12V5L12,1z" />
+    <path
+        android:fillColor="#09090B"
+        android:pathData="M10,15.17l-3.17,-3.17 -1.41,1.41L10,18l7,-7 -1.41,-1.41z" />
+</vector>

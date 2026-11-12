@@ -98,7 +98,32 @@ bunx tsx prisma/seed.ts
 - **Listas** — bloqueados e autorizados
 - **Denúncias** — reclamação coletiva que alimenta a reputação
 - **Regras** — thresholds, toggles por categoria, regras de operadora, **backup/restauração JSON**
-- **Anti-Spoofing** — análise dedicada de caller ID + inteligência de técnicas detectadas
+- **Anti-Spoofing** — análise dedicada de caller ID com o **pipeline visual dos 4 passos** + inteligência de técnicas detectadas
+
+## 🤖 App Android (`android-app/`)
+
+Cliente Android nativo (Kotlin + Jetpack Compose, Material 3 tema laranja escuro) que roda a mesma inteligência **no aparelho**, com Room como base local:
+
+| Componente | Papel |
+|------------|-------|
+| `CallScreeningServiceImpl` | Triagem real de chamadas (Android 10+): `BLOCK` → rejeita e notifica; `WARN` → alerta; fail-open (erro nunca bloqueia) |
+| `WhatsAppGuardService` | `NotificationListenerService` filtra mensagens do WhatsApp, alerta suspeitas e orienta o **bloqueio manual** (deep link `wa.me`) |
+| `engine/SpoofDetector.kt` | Os **mesmos 4 passos** anti-spoofing do console web (pesos e textos idênticos) |
+| `engine/CallRuleEngine.kt` | Call Guard com score 0–100, evidências e thresholds `v1.2.0` |
+| `engine/WhatsAppEngine.kt` | Catálogo determinístico de golpes BR: phishing do código de 6 dígitos, falso parente + PIX, links, prêmios |
+| `ui/` | Painel (stats + ativação de permissões), Simulador (4 passos visuais), Listas, WhatsApp |
+
+Build: Android Studio (JDK 17) → abrir `android-app/` → `assembleDebug`. Detalhes em [`android-app/README.md`](android-app/README.md).
+
+## 🗺️ Histórico de versões
+
+| Versão | Conteúdo |
+|--------|----------|
+| v0.1.0 – v0.3.0 | Console web + Engine 01/02 + inteligência no dashboard |
+| v0.4.0 | Inteligência anti-spoofing (Engine 04) |
+| v0.5.0 | Backup & portabilidade JSON |
+| v0.6.0 | **Pipeline anti-spoofing em 4 passos** (formato → apresentação internacional → frequência → reputação) + normalização internacional correta |
+| v0.7.0 | **App Android nativo** (CallScreening + WhatsApp Guard + Room + 4 passos) |
 
 ## 🔒 Regra de ouro
 

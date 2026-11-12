@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ORANGE SHIELD</string>
+
+    <!-- Canais de notificação -->
+    <string name="channel_call_guard_name">Triagem de chamadas</string>
+    <string name="channel_call_guard_description">Alertas de chamadas bloqueadas ou suspeitas detectadas</string>
+    <string name="channel_whatsapp_guard_name">Guardião WhatsApp</string>
+    <string name="channel_whatsapp_guard_description">Alertas de mensagens suspeitas analisadas</string>
+</resources>
