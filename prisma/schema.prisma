@@ -1,0 +1,165 @@
+// ORANGE SHIELD - Smart Call & Message Protection
+// Database schema following the product specification
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// NUMBERS & REPUTATION
+// ============================================================
+
+model PhoneNumber {
+  id            String           @id @default(cuid())
+  e164          String           @unique
+  countryCode   String           @default("+55")
+  numberType    String           @default("unknown") // mobile | landline | shortcode | shared | international
+  operator      String?
+  verified      Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  reputation    NumberReputation?
+  callEvents    CallEvent[]
+  smsMessages   SmsMessage[]
+  reports       Report[]
+}
+
+model NumberReputation {
+  id               String      @id @default(cuid())
+  phoneNumberId    String      @unique
+  phoneNumber      PhoneNumber @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+  riskScore        Int         @default(0)
+  classification   String      @default("unknown") // telemarketing | robocall | fraud | collector | verified_business | operator | unknown
+  reportCount      Int         @default(0)
+  confidence       Float       @default(0)
+  isConfirmedFraud Boolean     @default(false)
+  lastAnalyzedAt   DateTime?
+  updatedAt        DateTime    @updatedAt
+}
+
+// ============================================================
+// USER LISTS
+// ============================================================
+
+model BlockedNumber {
+  id        String   @id @default(cuid())
+  e164      String   @unique
+  label     String?
+  source    String   @default("manual") // manual | engine
+  createdAt DateTime @default(now())
+}
+
+model AllowedNumber {
+  id        String   @id @default(cuid())
+  e164      String   @unique
+  name      String?
+  kind      String   @default("contact") // contact | emergency | business
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// EVENTS (call / sms history)
+// ============================================================
+
+model CallEvent {
+  id            String       @id @default(cuid())
+  e164          String
+  phoneNumberId String?
+  phoneNumber   PhoneNumber? @relation(fields: [phoneNumberId], references: [id])
+  decision      String       // ALLOW | WARN | SILENCE | BLOCK
+  riskScore     Int
+  category      String?
+  evidences     String       @default("[]") // JSON [{label, points}]
+  reason        String
+  ruleVersion   String       @default("v1.0.0")
+  occurredAt    DateTime     @default(now())
+
+  @@index([e164])
+  @@index([decision])
+  @@index([occurredAt])
+}
+
+model SmsMessage {
+  id            String       @id @default(cuid())
+  sender        String
+  phoneNumberId String?
+  phoneNumber   PhoneNumber? @relation(fields: [phoneNumberId], references: [id])
+  content       String
+  category      String       @default("unknown") // advertising | billing | authentication | service | fraud | personal | unknown
+  decision      String       // ALLOW | QUARANTINE | BLOCK
+  riskScore     Int
+  evidences     String       @default("[]")
+  reason        String
+  occurredAt    DateTime     @default(now())
+
+  @@index([sender])
+  @@index([decision])
+  @@index([occurredAt])
+}
+
+// ============================================================
+// REPORTS (denúncias coletivas)
+// ============================================================
+
+model Report {
+  id            String       @id @default(cuid())
+  e164          String
+  phoneNumberId String?
+  phoneNumber   PhoneNumber? @relation(fields: [phoneNumberId], references: [id])
+  category      String // telemarketing | robocall | fraud | operator_spam | other
+  description   String?
+  status        String       @default("pending") // pending | approved | rejected
+  createdAt     DateTime     @default(now())
+}
+
+// ============================================================
+// INTELLIGENCE (patterns & operator rules)
+// ============================================================
+
+model SpamPattern {
+  id     String  @id @default(cuid())
+  kind   String // prefix | keyword | sender
+  value  String
+  weight Int // score points contributed
+  label  String
+  channel String @default("both") // call | sms | both
+  active Boolean @default(true)
+
+  @@unique([kind, value, channel])
+}
+
+model OperatorRule {
+  id       String  @id @default(cuid())
+  operator String // Claro | Vivo | TIM | Oi | Outras
+  sender   String
+  category String // advertising | authentication | billing | service
+  action   String  @default("block") // allow | quarantine | block
+  active   Boolean @default(true)
+
+  @@unique([operator, sender])
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+
+model UserSettings {
+  id                    String   @id @default("default")
+  protectionActive      Boolean  @default(true)
+  blockThreshold        Int      @default(70)
+  warnThreshold         Int      @default(30)
+  blockTelemarketing    Boolean  @default(true)
+  blockRobocalls        Boolean  @default(true)
+  blockCollectors       Boolean  @default(true)
+  blockOperatorAds      Boolean  @default(true)
+  blockInternational    Boolean  @default(false)
+  blockUnknownNumbers   Boolean  @default(false)
+  silenceMode           Boolean  @default(false)
+  insistenceProtection  Boolean  @default(true)
+  ruleVersion           String   @default("v1.0.0")
+  updatedAt             DateTime @updatedAt
+}

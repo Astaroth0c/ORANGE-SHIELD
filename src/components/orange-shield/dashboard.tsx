@@ -1,0 +1,238 @@
+"use client";
+
+import { useCallHistory, useSettings, useSmsHistory, useStats } from "@/hooks/use-orange-data";
+import {
+  CATEGORY_LABELS,
+  DecisionBadge,
+  ProtectionRing,
+  StatCard,
+} from "./ui-bits";
+import { formatPhone } from "@/lib/engine/normalize";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  Ban,
+  Database,
+  FileWarning,
+  MessageSquareOff,
+  PhoneOff,
+  ShieldCheck,
+  Siren,
+} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
+/** Master toggle switches shown as "Proteções ativadas" on the dashboard. */
+function ProtectionItem({
+  label,
+  description,
+  checked,
+  onToggle,
+  disabled,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onToggle: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/6 bg-white/3 px-3 py-2.5">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <span
+            className={cn(
+              "size-1.5 rounded-full",
+              checked ? "bg-orange-400 shadow-[0_0_8px_oklch(0.72_0.19_45)]" : "bg-zinc-600"
+            )}
+          />
+          {label}
+        </div>
+        <p className="truncate text-[11px] text-zinc-500">{description}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        disabled={disabled}
+        onClick={() => onToggle(!checked)}
+        className={cn(
+          "relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50",
+          checked ? "bg-orange-500" : "bg-white/15"
+        )}
+      >
+        <span
+          className={cn(
+            "absolute top-0.5 size-4 rounded-full bg-white transition-all",
+            checked ? "left-4.5" : "left-0.5"
+          )}
+        />
+      </button>
+    </div>
+  );
+}
+
+export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
+  const { data: stats, isLoading } = useStats();
+  const { data: settings } = useSettings();
+  const { data: recentCalls } = useCallHistory("ALL");
+  const { data: recentSms } = useSmsHistory("ALL");
+
+  const protections = [
+    { key: "blockTelemarketing", label: "Bloqueio de telemarketing", description: "Prefixo 0303 e centrais comerciais" },
+    { key: "blockRobocalls", label: "Bloqueio de robocalls", description: "Disparos automáticos identificados" },
+    { key: "blockOperatorAds", label: "Filtro de SMS comercial", description: "Propaganda de operadoras em quarentena/bloqueio" },
+    { key: "blockCollectors", label: "Proteção contra golpes", description: "Números confirmados como fraude" },
+  ] as const;
+
+  const activeCount = protections.filter((p) => settings?.[p.key]).length;
+  const percent = settings?.protectionActive ? Math.round((activeCount / protections.length) * 100) : 0;
+
+  const feed = [
+    ...(recentCalls ?? []).slice(0, 5).map((c) => ({
+      id: c.id,
+      kind: "call" as const,
+      title: formatPhone(c.e164),
+      decision: c.decision,
+      reason: c.reason,
+      occurredAt: c.occurredAt,
+    })),
+    ...(recentSms ?? []).slice(0, 4).map((s) => ({
+      id: s.id,
+      kind: "sms" as const,
+      title: s.sender,
+      decision: s.decision,
+      reason: s.reason,
+      occurredAt: s.occurredAt,
+    })),
+  ]
+    .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
+    .slice(0, 7);
+
+  return (
+    <div className="space-y-6">
+      {/* Hero: protection ring + stats */}
+      <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
+        <section className="glass glow-orange flex flex-col items-center justify-center rounded-2xl p-6" aria-label="Status da proteção">
+          {settings ? (
+            <ProtectionRing
+              percent={percent}
+              active={settings.protectionActive}
+              label={settings.protectionActive ? "Protegido" : "Inativo"}
+              sublabel="Motor de proteção"
+            />
+          ) : (
+            <Skeleton className="size-[168px] rounded-full" />
+          )}
+          <p className="mt-4 text-center text-xs text-zinc-400">
+            SmartCall Engine <span className="font-mono text-orange-400">{settings?.ruleVersion ?? "v1.0.0"}</span>
+          </p>
+        </section>
+
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Estatísticas de proteção">
+          <StatCard icon={<PhoneOff className="size-5" />} value={stats?.blockedCalls ?? 0} label="Chamadas bloqueadas" />
+          <StatCard icon={<MessageSquareOff className="size-5" />} value={stats?.blockedSms ?? 0} label="SMS bloqueados" accent="red" />
+          <StatCard icon={<Siren className="size-5" />} value={stats?.fraudCalls ?? 0} label="Golpes identificados" accent="red" />
+          <StatCard icon={<Ban className="size-5" />} value={stats?.quarantinedSms ?? 0} label="SMS em quarentena" accent="amber" />
+          <StatCard
+            icon={<ShieldCheck className="size-5" />}
+            value={(stats?.blockedCalls24h ?? 0) + (stats?.blockedSms24h ?? 0)}
+            label="Bloqueios nas últimas 24h"
+            accent="green"
+          />
+          <StatCard
+            icon={<Database className="size-5" />}
+            value={`${stats?.knownNumbers ?? 0}/${stats?.totalNumbers ?? 0}`}
+            label="Base de inteligência"
+            accent="orange"
+          />
+        </section>
+      </div>
+
+      {/* Active protections + recent feed */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="glass rounded-2xl p-5" aria-label="Proteções ativadas">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-300">Proteções ativadas</h2>
+            <button
+              onClick={() => onNavigate("rules")}
+              className="text-xs font-medium text-orange-400 hover:text-orange-300"
+            >
+              Configurar regras →
+            </button>
+          </div>
+          <div className="space-y-2">
+            {protections.map((p) => (
+              <ProtectionItem
+                key={p.key}
+                label={p.label}
+                description={p.description}
+                checked={settings?.[p.key] ?? false}
+                onToggle={() => onNavigate("rules")}
+                disabled
+              />
+            ))}
+          </div>
+          {settings?.silenceMode && (
+            <p className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/8 px-3 py-2 text-xs text-amber-300">
+              Modo silêncio total ativo: apenas contatos autorizados farão o telefone tocar.
+            </p>
+          )}
+        </section>
+
+        <section className="glass flex flex-col rounded-2xl p-5" aria-label="Atividade recente">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-300">Atividade recente</h2>
+            <button
+              onClick={() => onNavigate("history")}
+              className="text-xs font-medium text-orange-400 hover:text-orange-300"
+            >
+              Ver histórico →
+            </button>
+          </div>
+          <div className="custom-scrollbar max-h-72 space-y-2 overflow-y-auto pr-1">
+            {feed.length === 0 && (
+              <p className="py-8 text-center text-xs text-zinc-500">
+                Nenhuma atividade ainda. Use o simulador para testar o motor.
+              </p>
+            )}
+            {feed.map((item) => (
+              <div
+                key={`${item.kind}-${item.id}`}
+                className="flex items-center justify-between gap-3 rounded-lg border border-white/6 bg-white/3 px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-mono text-sm font-medium">{item.title}</span>
+                    <span className="rounded bg-white/6 px-1 py-0.5 text-[9px] uppercase tracking-wider text-zinc-500">
+                      {item.kind === "call" ? "Chamada" : "SMS"}
+                    </span>
+                  </div>
+                  <p className="truncate text-[11px] text-zinc-500">{item.reason}</p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <DecisionBadge decision={item.decision} />
+                  <span className="text-[10px] text-zinc-500">
+                    {formatDistanceToNow(new Date(item.occurredAt), { addSuffix: true, locale: ptBR })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          {stats && stats.pendingReports > 0 && (
+            <button
+              onClick={() => onNavigate("reports")}
+              className="mt-3 flex items-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/8 px-3 py-2 text-xs text-amber-300 hover:bg-amber-500/12"
+            >
+              <FileWarning className="size-4" />
+              {stats.pendingReports} denúncia(s) aguardando moderação
+            </button>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+export { CATEGORY_LABELS };
