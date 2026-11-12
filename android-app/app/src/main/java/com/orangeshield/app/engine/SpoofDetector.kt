@@ -206,6 +206,28 @@ class SpoofDetector(private val db: AppDatabase) {
     // ========================================================================
 
     fun formatStepChecks(e164: String): List<SpoofCheck> {
+        // Números de serviço (0303/0800/0300) usam plano de numeração
+        // dedicado: o prefixo É a identificação oficial da ANATEL, então as
+        // checagens de DDD/local gerariam falso positivo.
+        if (isServiceNumber(e164)) {
+            return listOf(
+                SpoofCheck(
+                    code = "NOT_BRL",
+                    label = "Formato não-local",
+                    detail = "Número de serviço (0303/0800/0300) — numeração dedicada",
+                    points = 0,
+                    status = SpoofStatus.INFO
+                ),
+                SpoofCheck(
+                    code = "SERVICE_FORMAT",
+                    label = "Formato de serviço dedicado",
+                    detail = "0303/0800/0300 possuem plano próprio — checagem de DDD/local não aplicável",
+                    points = 0,
+                    status = SpoofStatus.INFO
+                )
+            )
+        }
+
         val checks = mutableListOf<SpoofCheck>()
         val br = parseBrazilNumber(e164)
 
@@ -321,17 +343,6 @@ class SpoofDetector(private val db: AppDatabase) {
                 code = "ALPHANUMERIC_SENDER",
                 label = "Remetente alfanumérico",
                 detail = "Sem dígitos para validar (ex.: remetente de operadora)",
-                points = 0,
-                status = SpoofStatus.INFO
-            )
-            return checks
-        }
-
-        if (isServiceNumber(e164)) {
-            checks += SpoofCheck(
-                code = "SERVICE_FORMAT",
-                label = "Formato de serviço dedicado",
-                detail = "0303/0800/0300 possuem plano próprio — checagem de DDD/local não aplicável",
                 points = 0,
                 status = SpoofStatus.INFO
             )

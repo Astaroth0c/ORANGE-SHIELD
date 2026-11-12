@@ -192,6 +192,28 @@ function commonPrefixLength(a: string, b: string): number {
 // ============================================================================
 
 export function formatStepChecks(e164: string): SpoofCheck[] {
+  // Service numbers (0303/0800/0300) use a dedicated numbering plan:
+  // their prefix IS the official ANATEL identification, so DDD/local
+  // checks would produce false positives.
+  if (isServiceNumber(e164)) {
+    return [
+      {
+        code: "NOT_BRL",
+        label: "Formato não-local",
+        detail: "Número de serviço (0303/0800/0300) — numeração dedicada",
+        points: 0,
+        status: "info",
+      },
+      {
+        code: "SERVICE_FORMAT",
+        label: "Formato de serviço dedicado",
+        detail: "0303/0800/0300 possuem plano próprio — checagem de DDD/local não aplicável",
+        points: 0,
+        status: "info",
+      },
+    ];
+  }
+
   const checks: SpoofCheck[] = [];
   const br = parseBrazilNumber(e164);
 
@@ -304,17 +326,6 @@ export function formatStepChecks(e164: string): SpoofCheck[] {
       code: "ALPHANUMERIC_SENDER",
       label: "Remetente alfanumérico",
       detail: "Sem dígitos para validar (ex.: remetente de operadora)",
-      points: 0,
-      status: "info",
-    });
-    return checks;
-  }
-
-  if (isServiceNumber(e164)) {
-    checks.push({
-      code: "SERVICE_FORMAT",
-      label: "Formato de serviço dedicado",
-      detail: "0303/0800/0300 possuem plano próprio — checagem de DDD/local não aplicável",
       points: 0,
       status: "info",
     });
