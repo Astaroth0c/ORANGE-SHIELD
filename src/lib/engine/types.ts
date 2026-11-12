@@ -83,7 +83,7 @@ export const DEFAULT_SETTINGS: EngineSettings = {
   waBlockGroupInvite: false,
   spoofProtection: true,
   ownNumber: "",
-  ruleVersion: "v1.1.0",
+  ruleVersion: "v1.2.0",
 };
 
 export function clampScore(score: number): number {

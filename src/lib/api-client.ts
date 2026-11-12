@@ -92,6 +92,16 @@ export interface SpoofCheckResponse {
   status: "pass" | "flagged" | "info";
 }
 
+export interface SpoofStepResponse {
+  id: number;
+  code: string;
+  title: string;
+  description: string;
+  status: "pass" | "flagged" | "info";
+  points: number;
+  checks: SpoofCheckResponse[];
+}
+
 export interface WhatsAppAnalysisResponse {
   sender: string;
   decision: "ALLOW" | "QUARANTINE" | "BLOCK";
@@ -124,6 +134,7 @@ export interface SpoofAnalysisResponse {
   formatted: string;
   ownNumberConfigured: boolean;
   checks: SpoofCheckResponse[];
+  steps: SpoofStepResponse[];
   spoofScore: number;
   verdict: "clean" | "suspicious" | "spoof_likely";
   verdictLabel: string;

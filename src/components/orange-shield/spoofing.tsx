@@ -145,6 +145,8 @@ export function SpoofDetector() {
     { label: "Celular sem 9º dígito", value: "+551191234567" },
     { label: "Dígitos repetidos", value: "+5511977777777" },
     { label: "Sequência artificial", value: "+5511912345678" },
+    { label: "Anomalia internacional (+5500…)", value: "+55 00 99999-9999" },
+    { label: "BR mascarado como internacional", value: "+1 55 11 98765-4321" },
   ];
 
   return (
@@ -284,9 +286,55 @@ export function SpoofDetector() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            {data.checks.map((c) => (
-              <CheckRow key={c.code} check={c} />
+          {/* The four-step anti-spoofing pipeline (v0.6.0) */}
+          <div className="space-y-3">
+            {data.steps.map((step) => (
+              <div key={step.code} className="glass rounded-2xl p-4" aria-label={step.title}>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span
+                      className={cn(
+                        "flex size-7 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-bold",
+                        step.status === "flagged"
+                          ? "bg-red-500/15 text-red-300"
+                          : step.status === "pass"
+                            ? "bg-emerald-500/15 text-emerald-300"
+                            : "bg-white/8 text-zinc-400"
+                      )}
+                    >
+                      {step.id}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-zinc-200">{step.title}</p>
+                      <p className="text-[10px] leading-snug text-zinc-500">{step.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {step.points > 0 && (
+                      <span className="rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-red-300">
+                        +{step.points}
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        "rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                        step.status === "flagged"
+                          ? "border-red-500/30 bg-red-500/10 text-red-300"
+                          : step.status === "pass"
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                            : "border-white/10 bg-white/5 text-zinc-400"
+                      )}
+                    >
+                      {step.status === "flagged" ? "Alerta" : step.status === "pass" ? "OK" : "Neutro"}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {step.checks.map((c) => (
+                    <CheckRow key={c.code} check={c} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
 
@@ -403,28 +451,39 @@ export function SpoofDetector() {
       {/* Education */}
       <section className="glass rounded-2xl p-5" aria-label="Como o detector funciona">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-300">
-          <Fingerprint className="size-4 text-orange-400" /> Técnicas de spoofing detectadas
+          <Fingerprint className="size-4 text-orange-400" /> Os 4 passos do detector
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-white/8 bg-white/3 p-3.5">
-            <p className="text-sm font-medium text-zinc-200">Neighbor spoofing (+35)</p>
+            <p className="text-sm font-medium text-zinc-200">1 · Formato do número</p>
             <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-              O golpe liga &quot;de você mesmo&quot;: imita seu DDD e os primeiros dígitos (ou o
-              final do seu número) para ganhar confiança. Comum em falsas operadoras e bancos.
+              Valida a estrutura do caller ID: DDD existente na ANATEL, regra do nono dígito e
+              padrões sintéticos (dígitos repetidos ou sequenciais gerados por software de
+              spoofing).
             </p>
           </div>
           <div className="rounded-xl border border-white/8 bg-white/3 p-3.5">
-            <p className="text-sm font-medium text-zinc-200">DDD/len inválidos (+30/+25)</p>
+            <p className="text-sm font-medium text-zinc-200">2 · Apresentação internacional</p>
             <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-              Caller ID com DDD que não existe na ANATEL ou celular sem o 9º dígito — números
-              fisicamente impossíveis, gerados por software de spoofing.
+              Flagra número local exibido como internacional inválido (+5500…), dígitos
+              excedentes no plano nacional, número brasileiro mascarado atrás de código
+              estrangeiro e o neighbor spoofing (&quot;ligando de você mesmo&quot;).
             </p>
           </div>
           <div className="rounded-xl border border-white/8 bg-white/3 p-3.5">
-            <p className="text-sm font-medium text-zinc-200">Wangiri / rediscagem (+40)</p>
+            <p className="text-sm font-medium text-zinc-200">3 · Frequência de chamadas</p>
             <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-              1 toque e desliga, várias vezes: ao retornar, você cai em tarifa premium. O detector
-              cruza rediscagens rápidas com o histórico de triagens.
+              Rediscagem rápida em 15 minutos (padrão Wangiri de tarifa premium) e ondas de
+              disparo: muitos números distintos do mesmo DDD em 1 hora indicam spoofing em
+              massa.
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/8 bg-white/3 p-3.5">
+            <p className="text-sm font-medium text-zinc-200">4 · Reputação do número</p>
+            <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+              Consulta a base local de reputação: golpe confirmado, denúncias coletivas da
+              comunidade e classificação como robocall/telemarketing somam evidências contra o
+              caller ID.
             </p>
           </div>
         </div>

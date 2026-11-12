@@ -35,13 +35,18 @@ Fluxo de triagem por prioridade (especificação §12):
 - Integração com o Spoof Detector (números não-BR, sintéticos)
 - Pontos de plug reais no Android: `NotificationListenerService` + checagens de contatos
 
-### Engine 04 · Spoof Detector
-Checagens de manipulação de caller ID:
-- `NEIGHBOR_SPOOF` — imita o número do usuário (mesmo DDD/prefixo/sufixo)
-- `INVALID_DDD` — DDD inexistente no plano da ANATEL
-- `BAD_LENGTH` — nono dígito ausente (formato pré-2012) ou fixo com 9 dígitos
-- `REPEATED_DIGITS` / `SEQUENTIAL_DIGITS` — padrões sintéticos gerados por software
-- `RAPID_REDIAL` — padrão Wangiri ("1 toque e desliga", tarifa premium)
+### Engine 04 · Spoof Detector — pipeline de 4 passos (v0.6.0)
+Identificação de caller ID falsificado em **quatro passos encadeados**:
+
+| Passo | Nome | O que detecta |
+|-------|------|---------------|
+| **1** | 🧾 **Formato do número** | `INVALID_DDD` (DDD fora do plano ANATEL) · `BAD_LENGTH` (nono dígito ausente/fixo com 9) · `REPEATED_DIGITS` / `SEQUENTIAL_DIGITS` (padrões sintéticos) · `BAD_INTL_LENGTH` (E.164 fora de 8–15 dígitos) |
+| **2** | 🌍 **Apresentação internacional** | `INTERNATIONAL_ANOMALY` (número local exibido como "+5500…") · `EXCESS_LENGTH` (dígitos excedentes no plano nacional) · `INTL_MASKED_BR` (número BR mascarado atrás de código estrangeiro) · `NEIGHBOR_SPOOF` (imita o número do usuário) |
+| **3** | 🔁 **Frequência de chamadas** | `RAPID_REDIAL` (Wangiri — "1 toque e desliga", ≥3 triagens em 15 min) · `PREFIX_BURST` (onda de disparo: ≥6 números distintos do mesmo DDD em 1h) |
+| **4** | 🗂️ **Reputação do número** | `REPUTATION_FRAUD` (golpe confirmado) · `REPUTATION_REPORTS` (denúncias coletivas ponderadas por confiança) · `REPUTATION_CLASS` (robocall/telemarketing/collector) · `REPUTATION_VERIFIED` (reputação positiva) |
+
+Cada passo retorna `pass`/`flagged`/`info` com evidências individuais; o **spoof score 0–100**
+soma todos os flags e alimenta o Call Guard (`spoof score ≥ 55` = spoofing provável).
 
 ---
 

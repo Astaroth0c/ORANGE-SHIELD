@@ -31,6 +31,7 @@ export async function engineSettings(): Promise<EngineSettings> {
     waBlockGroupInvite: s.waBlockGroupInvite,
     spoofProtection: s.spoofProtection,
     ownNumber: s.ownNumber ?? "",
-    ruleVersion: s.ruleVersion ?? DEFAULT_SETTINGS.ruleVersion,
+    // Rule version is defined by the code, not by user settings (audit field)
+    ruleVersion: DEFAULT_SETTINGS.ruleVersion,
   };
 }

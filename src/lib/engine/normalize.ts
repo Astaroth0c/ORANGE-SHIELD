@@ -19,12 +19,24 @@ export function normalizePhone(raw: string): string {
     return trimmed.toUpperCase().replace(/\s+/g, "");
   }
 
-  let digits = trimmed.replace(/\D/g, "");
+  // Genuine international dialing intent: "+..." or "00..." prefix
+  const intlIntent = trimmed.startsWith("+") || trimmed.startsWith("00");
 
+  let digits = trimmed.replace(/\D/g, "");
+  if (!digits) return "";
+
+  // Strip the international dial-out prefix (00)
+  if (digits.startsWith("00")) digits = digits.slice(2);
   if (!digits) return "";
 
   // Already carries country code (55 + DDD + number)
   if (digits.startsWith(COUNTRY_CODE) && digits.length >= 12 && digits.length <= 13) {
+    return `+${digits}`;
+  }
+
+  // Foreign country code — preserve as international
+  // (Spoof Detector step 2 relies on genuine international presentation)
+  if (intlIntent && !digits.startsWith(COUNTRY_CODE)) {
     return `+${digits}`;
   }
 
