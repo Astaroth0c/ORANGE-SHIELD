@@ -75,23 +75,25 @@ bunx tsx prisma/seed.ts
 | `/api/engine/sms` | POST | Classificação de SMS (Engine 02) |
 | `/api/engine/whatsapp` | POST | Triagem de mensagem WA (Engine 03 + 04) |
 | `/api/spoof` | POST | Análise anti-spoofing dedicada (Engine 04) |
+| `/api/spoof/history` | GET | Inteligência agregada de spoofing (técnicas + ataques) |
 | `/api/lookup` | POST | Consulta de reputação de número |
 | `/api/blacklist` · `/api/whitelist` | GET/POST/DELETE | Listas pessoal |
 | `/api/reports` | GET/POST | Denúncias coletivas |
 | `/api/patterns` · `/api/operators` | GET | Inteligência (padrões e regras) |
 | `/api/history/*` | GET | Histórico (chamadas, SMS, WhatsApp) |
-| `/api/stats` | GET | Estatísticas agregadas |
+| `/api/stats` | GET | Estatísticas agregadas + inteligência (decisões, canais, ameaças, insights) |
 | `/api/settings` | GET/PATCH | Configurações e thresholds |
+| `/api/backup` | GET/POST | Exportar/restaurar backup completo em JSON (envelope versionado) |
 
 ## 📱 Painéis
 
-- **Dashboard** — estatísticas, proteção em tempo real
+- **Dashboard** — estatísticas, proteção em tempo real, inteligência (decisões 7d, canais atacados, insights automáticos, principais ameaças)
 - **Simulador** — teste os 4 engines com qualquer número/mensagem
 - **Histórico** — chamadas, SMS e WhatsApp triados com evidências
 - **Listas** — bloqueados e autorizados
 - **Denúncias** — reclamação coletiva que alimenta a reputação
-- **Regras** — thresholds, toggles por categoria, regras de operadora
-- **Anti-Spoofing** — análise dedicada de caller ID
+- **Regras** — thresholds, toggles por categoria, regras de operadora, **backup/restauração JSON**
+- **Anti-Spoofing** — análise dedicada de caller ID + inteligência de técnicas detectadas
 
 ## 🔒 Regra de ouro
 
