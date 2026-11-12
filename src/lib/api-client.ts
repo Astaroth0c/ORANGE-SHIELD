@@ -21,6 +21,12 @@ export interface StatsResponse {
   callsByCategory: { category: string; count: number }[];
   smsByCategory: { category: string; count: number }[];
   lastEventAt: string | null;
+  // Engine intelligence (v0.3.0)
+  decisionDistribution: { ALLOW: number; WARN: number; SILENCE: number; BLOCK: number };
+  riskBands: { safe: number; low: number; suspect: number; high: number; critical: number };
+  topThreats: { e164: string; hits: number; blocked: number; lastSeen: string }[];
+  channelAttacks: { calls: number; sms: number; whatsapp: number };
+  insights: { icon: string; text: string }[];
 }
 
 export interface SettingsResponse {

@@ -2,7 +2,6 @@
 
 import { useCallHistory, useSettings, useSmsHistory, useStats, useWhatsAppHistory } from "@/hooks/use-orange-data";
 import {
-  CATEGORY_LABELS,
   DecisionBadge,
   ProtectionRing,
   StatCard,
@@ -15,11 +14,13 @@ import {
   Database,
   FileWarning,
   Fingerprint,
+  Lightbulb,
   MessageCircle,
   MessageSquareOff,
   PhoneOff,
   ShieldCheck,
   Siren,
+  Target,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -75,8 +76,97 @@ function ProtectionItem({
   );
 }
 
+/** Horizontal stacked bar for the 7-day decision distribution. */
+function DecisionBar({
+  dist,
+}: {
+  dist: { ALLOW: number; WARN: number; SILENCE: number; BLOCK: number };
+}) {
+  const total = dist.ALLOW + dist.WARN + dist.SILENCE + dist.BLOCK;
+  const segs = [
+    { key: "ALLOW", count: dist.ALLOW, color: "bg-emerald-500", label: "Permitidas" },
+    { key: "WARN", count: dist.WARN, color: "bg-amber-500", label: "Suspeitas" },
+    { key: "SILENCE", count: dist.SILENCE, color: "bg-zinc-500", label: "Silenciadas" },
+    { key: "BLOCK", count: dist.BLOCK, color: "bg-red-500", label: "Bloqueadas" },
+  ].filter((s) => s.count > 0);
+
+  if (total === 0) {
+    return <p className="py-4 text-center text-xs text-zinc-500">Sem chamadas triadas nos últimos 7 dias.</p>;
+  }
+
+  return (
+    <div>
+      <div className="flex h-4 w-full overflow-hidden rounded-full bg-white/8" role="img" aria-label="Distribuição de decisões dos últimos 7 dias">
+        {segs.map((s) => (
+          <div
+            key={s.key}
+            className={cn(s.color, "h-full transition-all duration-700")}
+            style={{ width: `${(s.count / total) * 100}%` }}
+          />
+        ))}
+      </div>
+      <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
+        {segs.map((s) => (
+          <div key={s.key} className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+            <span className={cn("size-2 rounded-sm", s.color)} />
+            {s.label}
+            <span className="font-mono font-semibold text-zinc-300">{s.count}</span>
+            <span className="text-zinc-600">({Math.round((s.count / total) * 100)}%)</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Channel attack mini-bars: calls vs SMS vs WhatsApp (7 days). */
+function ChannelBars({
+  attacks,
+}: {
+  attacks: { calls: number; sms: number; whatsapp: number };
+}) {
+  const rows = [
+    { label: "Chamadas", icon: <PhoneOff className="size-3.5" />, count: attacks.calls, color: "bg-orange-500" },
+    { label: "SMS", icon: <MessageSquareOff className="size-3.5" />, count: attacks.sms, color: "bg-red-500" },
+    { label: "WhatsApp", icon: <MessageCircle className="size-3.5" />, count: attacks.whatsapp, color: "bg-emerald-500" },
+  ];
+  const max = Math.max(1, ...rows.map((r) => r.count));
+
+  return (
+    <div className="space-y-2.5">
+      {rows.map((r) => (
+        <div key={r.label} className="flex items-center gap-2.5">
+          <span className="flex w-24 shrink-0 items-center gap-1.5 text-xs text-zinc-400">
+            {r.icon}
+            {r.label}
+          </span>
+          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/8">
+            <div
+              className={cn(r.color, "h-full rounded-full transition-all duration-700")}
+              style={{ width: `${Math.max(r.count > 0 ? 6 : 0, (r.count / max) * 100)}%` }}
+            />
+          </div>
+          <span className="w-8 shrink-0 text-right font-mono text-xs font-semibold">{r.count}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Insight rows with icon mapping. */
+function InsightRow({ icon, text }: { icon: string; text: string }) {
+  const Icon =
+    icon === "siren" ? Siren : icon === "target" ? Target : icon === "fingerprint" ? Fingerprint : ShieldCheck;
+  return (
+    <li className="flex items-start gap-2.5 rounded-lg border border-white/6 bg-white/3 px-3 py-2">
+      <Icon className="mt-0.5 size-4 shrink-0 text-orange-400" />
+      <span className="text-xs leading-relaxed text-zinc-300">{text}</span>
+    </li>
+  );
+}
+
 export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void }) {
-  const { data: stats, isLoading } = useStats();
+  const { data: stats } = useStats();
   const { data: settings } = useSettings();
   const { data: recentCalls } = useCallHistory("ALL");
   const { data: recentSms } = useSmsHistory("ALL");
@@ -246,8 +336,78 @@ export function Dashboard({ onNavigate }: { onNavigate: (tab: string) => void })
           )}
         </section>
       </div>
+      {/* Intelligence (v0.3.0): decisions, channels, top threats, insights */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <section className="glass rounded-2xl p-5" aria-label="Distribuição de decisões">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-300">Decisões · 7 dias</h2>
+          {stats ? (
+            <DecisionBar dist={stats.decisionDistribution} />
+          ) : (
+            <Skeleton className="h-16 w-full rounded-lg" />
+          )}
+        </section>
+
+        <section className="glass rounded-2xl p-5" aria-label="Canais atacados">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-300">Canais atacados · 7 dias</h2>
+          {stats ? (
+            <ChannelBars attacks={stats.channelAttacks} />
+          ) : (
+            <Skeleton className="h-16 w-full rounded-lg" />
+          )}
+        </section>
+
+        <section className="glass flex flex-col rounded-2xl p-5" aria-label="Insights automáticos">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-300">
+            <Lightbulb className="size-4 text-orange-400" />
+            Insights automáticos
+          </h2>
+          {stats ? (
+            <ul className="space-y-2">
+              {stats.insights.map((i, idx) => (
+                <InsightRow key={idx} icon={i.icon} text={i.text} />
+              ))}
+            </ul>
+          ) : (
+            <Skeleton className="h-16 w-full rounded-lg" />
+          )}
+        </section>
+      </div>
+
+      {stats && stats.topThreats.length > 0 && (
+        <section className="glass rounded-2xl p-5" aria-label="Principais ameaças da semana">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-300">
+              <Target className="size-4 text-red-400" />
+              Principais ameaças · 7 dias
+            </h2>
+            <button
+              onClick={() => onNavigate("history")}
+              className="text-xs font-medium text-orange-400 hover:text-orange-300"
+            >
+              Ver histórico →
+            </button>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {stats.topThreats.map((t) => (
+              <div
+                key={t.e164}
+                className="flex items-center justify-between gap-3 rounded-lg border border-red-500/12 bg-red-500/5 px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <span className="block truncate font-mono text-sm font-medium">{formatPhone(t.e164)}</span>
+                  <span className="text-[11px] text-zinc-500">
+                    {t.blocked} bloqueio(s) · {t.hits} contato(s) com o motor
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Ban className="size-4 text-red-400" />
+                  <span className="font-mono text-lg font-bold text-red-400">{t.blocked}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
-
-export { CATEGORY_LABELS };
