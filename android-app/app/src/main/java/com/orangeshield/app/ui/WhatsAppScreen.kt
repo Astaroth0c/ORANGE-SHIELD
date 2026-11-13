@@ -64,6 +64,18 @@ fun WhatsAppScreen() {
         onPauseOrDispose { }
     }
     val listenerEnabled = remember(resumeTick) { Notifier.isNotificationListenerEnabled(context) }
+    var consentEnabled by remember {
+        mutableStateOf(
+            context.getSharedPreferences("orange_shield_privacy", android.content.Context.MODE_PRIVATE)
+                .getBoolean("whatsapp_notification_access_consent", false)
+        )
+    }
+    val operationalStatus = when {
+        !listenerEnabled -> "Acesso Android pendente"
+        !consentEnabled -> "Acesso concedido · análise pausada por consentimento"
+        events.isNotEmpty() -> "Eventos reais registrados · aguardando novas notificações"
+        else -> "Acesso e consentimento ativos · aguardando a próxima notificação elegível"
+    }
     val timeFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
 
     LazyColumn(
@@ -98,6 +110,9 @@ fun WhatsAppScreen() {
                             color = if (listenerEnabled) EmeraldOk else AmberWarn
                         )
                     }
+                    Text(operationalStatus, fontSize = 12.sp, color = if (listenerEnabled && consentEnabled) EmeraldOk else AmberWarn)
+                    Text("Notificações efetivamente processadas: ${events.size}", fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         text = "O guardião analisa as notificações do WhatsApp e do WhatsApp Business com o catálogo determinístico de golpes e registra o histórico abaixo.",
                         fontSize = 12.sp,
@@ -113,6 +128,7 @@ fun WhatsAppScreen() {
                         onClick = {
                             context.getSharedPreferences("orange_shield_privacy", android.content.Context.MODE_PRIVATE)
                                 .edit().putBoolean("whatsapp_notification_access_consent", false).apply()
+                            consentEnabled = false
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -168,6 +184,7 @@ fun WhatsAppScreen() {
                 TextButton(onClick = {
                     context.getSharedPreferences("orange_shield_privacy", android.content.Context.MODE_PRIVATE)
                         .edit().putBoolean("whatsapp_notification_access_consent", true).apply()
+                    consentEnabled = true
                     showDisclosure = false
                     try {
                         context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
