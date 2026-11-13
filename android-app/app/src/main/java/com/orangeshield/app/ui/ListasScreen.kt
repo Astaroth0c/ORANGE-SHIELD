@@ -59,13 +59,16 @@ fun ListasScreen() {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Bloqueados") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Permitidos") })
             Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Sugestões") })
+            Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("No aparelho") })
         }
         if (tab == 0) {
             BlockedList()
         } else if (tab == 1) {
             AllowedList()
-        } else {
+        } else if (tab == 2) {
             HistorySuggestions()
+        } else {
+            NativeBlockedHistory()
         }
     }
 }
@@ -374,6 +377,46 @@ private fun HistorySuggestions() {
                         onClick = { page = (safePage + 1).coerceAtMost(pageCount - 1); scope.launch { listState.animateScrollToItem(0) } },
                         enabled = safePage < pageCount - 1
                     ) { Text("Próxima") }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun NativeBlockedHistory() {
+    val candidates by EngineProvider.database.historyCandidateDao()
+        .observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val blocked = candidates.filter { it.blockedCalls > 0 }
+        .sortedByDescending { it.blockedCalls }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        contentPadding = PaddingValues(bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            Text("Registros marcados como bloqueados pelo aparelho", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "Fonte: histórico de chamadas lido pelo Radar. Isso não é a lista completa de bloqueio do Android; alguns fabricantes não registram todos os bloqueios neste histórico.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (blocked.isEmpty()) {
+            item {
+                EmptyHint("Nenhum registro de bloqueio nativo foi encontrado na última varredura. Execute novamente o Radar; o Android pode não expor esses registros neste aparelho.")
+            }
+        }
+        items(blocked, key = { it.e164 }) { item ->
+            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(formatPhone(item.e164), fontWeight = FontWeight.SemiBold)
+                    Text("\${item.blockedCalls} registro(s) marcado(s) como bloqueado(s)",
+                        fontSize = 11.sp, color = OrangePrimary)
+                    Text("Total no histórico: \${item.totalCalls} chamada(s)",
+                        fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
