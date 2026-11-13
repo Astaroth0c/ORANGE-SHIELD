@@ -30,6 +30,12 @@ SHA-256 do APK v1.0.0:
 
 **Atenção à assinatura:** o APK v1.0.0 foi assinado com uma chave que esteve armazenada no repositório público. Considere essa chave comprometida. A v1.1.0 deve usar credenciais protegidas como secrets do ambiente de build. Uma chave nova impede a atualização direta sobre a v1.0.0: será necessário exportar os dados, desinstalar a versão antiga e instalar a nova. Não publique novas versões com a chave antiga.
 
+### APK de desenvolvimento v1.1.0
+
+A branch `development/v1.1.0` gera um APK de teste pelo GitHub Actions. O build `debug` usa o pacote `com.orangeshield.app.dev`, então pode ser instalado **ao lado** da versão estável `com.orangeshield.app`, sem desinstalá-la e sem misturar os bancos locais. O APK aparece em **Actions → Android development APK → Artifacts** após o workflow concluir.
+
+O APK de desenvolvimento usa assinatura debug e não substitui a versão de produção. Para builds de release, configure `ORANGE_KEYSTORE_PATH`, `ORANGE_KEYSTORE_PASSWORD`, `ORANGE_KEY_ALIAS` e `ORANGE_KEY_PASSWORD` como variáveis seguras do ambiente de build. Não armazene a keystore nem senhas no Git.
+
 ## 2. Pré-requisitos (para compilar)
 
 | Ferramenta | Versão recomendada |
@@ -45,7 +51,7 @@ Gradle instalado:
 
 ```bash
 cd android-app
-./gradlew assembleDebug      # APK debug em app/build/outputs/apk/debug/
+./gradlew assembleDebug      # APK debug isolado (.dev) em app/build/outputs/apk/debug/
 ./gradlew assembleRelease    # APK release ASSINADO em app/build/outputs/apk/release/
 ./gradlew installDebug       # instala no dispositivo/emulador conectado
 ```
