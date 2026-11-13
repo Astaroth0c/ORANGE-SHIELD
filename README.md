@@ -90,6 +90,12 @@ bunx tsx prisma/seed.ts
 | `/api/settings` | GET/PATCH | Configurações e thresholds |
 | `/api/backup` | GET/POST | Exportar/restaurar backup completo em JSON (envelope versionado) |
 
+### Segurança da API — estado atual
+
+A aprovação de denúncias exige a variável de ambiente `ORANGE_ADMIN_TOKEN` no servidor e o cabeçalho `Authorization: Bearer <token>` no PATCH de `/api/reports`. O POST sempre cria denúncias pendentes e ignora qualquer `autoApprove` enviado pelo cliente.
+
+**Importante:** isso protege o fluxo de moderação, mas ainda não representa autenticação completa do console. As demais rotas de API precisam de autenticação e isolamento por usuário antes de expor a aplicação diretamente à internet. Até lá, mantenha o console em ambiente local ou atrás de uma camada de acesso restrito.
+
 ## 📱 Painéis
 
 - **Dashboard** — estatísticas, proteção em tempo real, inteligência (decisões 7d, canais atacados, insights automáticos, principais ameaças)
