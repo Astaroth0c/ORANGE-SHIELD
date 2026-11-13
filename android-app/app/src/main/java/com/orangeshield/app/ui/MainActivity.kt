@@ -45,8 +45,7 @@ import kotlinx.coroutines.launch
 
 /**
  * ORANGE SHIELD — MainActivity (Jetpack Compose).
- * TopAppBar com a chave mestra de proteção + NavigationBar com 4 telas:
- * Painel, Simulador, Listas e WhatsApp.
+ * TopAppBar com a chave mestra de proteção + NavigationBar com Painel, Análise, Listas, WhatsApp e Observatório.
  */
 class MainActivity : ComponentActivity() {
 
