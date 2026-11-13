@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.orangeshield.app"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.orangeshield.app"
         minSdk = 29
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 6
         versionName = "1.1.0"
     }
