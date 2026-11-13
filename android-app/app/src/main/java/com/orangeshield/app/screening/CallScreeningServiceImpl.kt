@@ -53,6 +53,7 @@ class CallScreeningServiceImpl : CallScreeningService() {
             val response = CallScreeningService.CallResponse.Builder()
                 .setDisallowCall(block)
                 .setRejectCall(block)
+                .setSilenceCall(analysis?.decision == CallDecision.SILENCE)
                 .setSkipCallLog(false) // chamadas bloqueadas continuam no registro de chamadas
                 .setSkipNotification(block) // sem notificação nativa quando o app já alerta
                 .build()
@@ -69,6 +70,12 @@ class CallScreeningServiceImpl : CallScreeningService() {
                     context = this,
                     blocked = false,
                     title = "Suspeita identificada",
+                    text = analysis?.reason.orEmpty()
+                )
+                CallDecision.SILENCE -> Notifier.postCallAlert(
+                    context = this,
+                    blocked = false,
+                    title = "Chamada silenciada",
                     text = analysis?.reason.orEmpty()
                 )
                 else -> Unit
