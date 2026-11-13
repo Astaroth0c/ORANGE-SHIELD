@@ -63,6 +63,7 @@ import kotlinx.coroutines.launch
 fun PainelScreen() {
     val context = LocalContext.current
     var showCallDisclosure by remember { mutableStateOf(false) }
+    var showWhatsAppDisclosure by remember { mutableStateOf(false) }
     val dao = EngineProvider.database.callEventDao()
 
     val total by dao.countTotal().collectAsStateWithLifecycle(initialValue = 0)
@@ -96,6 +97,35 @@ fun PainelScreen() {
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    if (showWhatsAppDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showWhatsAppDisclosure = false },
+            title = { Text("Guardião WhatsApp: acesso às notificações") },
+            text = {
+                Text(
+                    "Para detectar mensagens suspeitas, o app lê o título e o texto das notificações somente dos pacotes WhatsApp e WhatsApp Business. " +
+                    "A análise ocorre localmente; o texto original não é armazenado nem enviado a servidores. O histórico guarda remetente, decisão, pontuação e motivo. " +
+                    "Você pode recusar e continuar usando a proteção de chamadas."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    context.getSharedPreferences("orange_shield_privacy", Context.MODE_PRIVATE)
+                        .edit().putBoolean("whatsapp_notification_access_consent", true).apply()
+                    showWhatsAppDisclosure = false
+                    try {
+                        context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                    } catch (_: Exception) {
+                        Toast.makeText(context, "Abra manualmente Acesso a notificações nas configurações.", Toast.LENGTH_LONG).show()
+                    }
+                }) { Text("Concordo e abrir configurações") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWhatsAppDisclosure = false }) { Text("Agora não") }
+            }
+        )
     }
 
     if (showCallDisclosure) {
@@ -172,19 +202,7 @@ fun PainelScreen() {
                     active = listenerAtivo
                 )
                 Button(
-                    onClick = {
-                        try {
-                            context.startActivity(
-                                Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                            )
-                        } catch (_: Exception) {
-                            Toast.makeText(
-                                context,
-                                "Não foi possível abrir as configurações de acesso",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    },
+                    onClick = { showWhatsAppDisclosure = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Permitir acesso a notificações")
