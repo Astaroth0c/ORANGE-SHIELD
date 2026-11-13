@@ -8,7 +8,7 @@ sem rede, sem telemetria, sem aleatoriedade (motor determinístico).
 
 - **Pacote:** `com.orangeshield.app`
 - **Versão:** 1.1.0 (versionCode 6) — linha de trabalho `work/v1.1-security-observatory`
-- **Stack:** Kotlin 2.1.20 · AGP 8.10.1 · Jetpack Compose (Material3) · Room 2.6.1 (KSP) · corrotinas
+- **Stack:** Kotlin 2.2.0 · AGP 8.10.1 · Jetpack Compose (Material3) · Room 2.6.1 (KSP) · corrotinas
 - **SDK:** compileSdk/targetSdk 36 · minSdk 29 (Android 10+ — necessário para `CallScreeningService` + `RoleManager`)
 - **Idioma:** pt-BR em toda a UI
 
