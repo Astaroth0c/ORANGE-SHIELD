@@ -2,7 +2,7 @@ name: Android APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'work/**' ]
     paths: [ 'android-app/**', '.github/workflows/android.yml' ]
   workflow_dispatch:
 
@@ -22,15 +22,33 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build release APK (assinado com a chave do projeto)
+      - name: Prepare private release signing key
+        if: ${{ secrets.ORANGE_SIGNING_STORE_BASE64 != '' }}
+        env:
+          STORE_BASE64: ${{ secrets.ORANGE_SIGNING_STORE_BASE64 }}
+        run: |
+          echo "$STORE_BASE64" | base64 --decode > "$RUNNER_TEMP/orange-shield-upload.jks"
+          chmod 600 "$RUNNER_TEMP/orange-shield-upload.jks"
+
+      - name: Build release APK
         working-directory: android-app
+        env:
+          ORANGE_SIGNING_STORE_FILE: ${{ runner.temp }}/orange-shield-upload.jks
+          ORANGE_SIGNING_STORE_PASSWORD: ${{ secrets.ORANGE_SIGNING_STORE_PASSWORD }}
+          ORANGE_SIGNING_KEY_ALIAS: ${{ secrets.ORANGE_SIGNING_KEY_ALIAS }}
+          ORANGE_SIGNING_KEY_PASSWORD: ${{ secrets.ORANGE_SIGNING_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon --console=plain
 
+      - name: Generate APK checksum
+        run: sha256sum android-app/app/build/outputs/apk/release/app-release.apk > android-app/app/build/outputs/apk/release/SHA256SUMS.txt
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ORANGE-SHIELD-APK
-          path: android-app/app/build/outputs/apk/release/app-release.apk
+          name: ORANGE-SHIELD-v1.1.0
+          path: |
+            android-app/app/build/outputs/apk/release/app-release.apk
+            android-app/app/build/outputs/apk/release/SHA256SUMS.txt
           if-no-files-found: error
