@@ -61,15 +61,15 @@ jobs:
           test -n "$RELEASE_APK" && test -f "$RELEASE_APK"
           test -n "$RELEASE_AAB" && test -f "$RELEASE_AAB"
 
-          cp "$DEBUG_APK" dist/ORANGE-SHIELD-v1.1.0-debug.apk
+          cp "$DEBUG_APK" dist/ORANGE-SHIELD-v1.2.0-debug.apk
           if [[ "$(basename "$RELEASE_APK")" == *-unsigned.apk ]]; then
-            cp "$RELEASE_APK" dist/ORANGE-SHIELD-v1.1.0-release-unsigned.apk
+            cp "$RELEASE_APK" dist/ORANGE-SHIELD-v1.2.0-release-unsigned.apk
             echo "Release APK: unsigned (no private signing key configured)." > dist/BUILD-NOTES.txt
           else
-            cp "$RELEASE_APK" dist/ORANGE-SHIELD-v1.1.0-release.apk
+            cp "$RELEASE_APK" dist/ORANGE-SHIELD-v1.2.0-release.apk
             echo "Release APK: signed by the configured release signing key." > dist/BUILD-NOTES.txt
           fi
-          cp "$RELEASE_AAB" dist/ORANGE-SHIELD-v1.1.0-release.aab
+          cp "$RELEASE_AAB" dist/ORANGE-SHIELD-v1.2.0-release.aab
 
       - name: Generate package checksums
         run: |
@@ -80,6 +80,6 @@ jobs:
       - name: Upload Android test and release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ORANGE-SHIELD-v1.1.0-android
+          name: ORANGE-SHIELD-v1.2.0-android
           path: dist/*
           if-no-files-found: error
