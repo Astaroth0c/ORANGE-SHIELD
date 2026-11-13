@@ -1,6 +1,7 @@
 package com.orangeshield.app.ui
 
 import android.os.Bundle
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -37,6 +38,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -172,8 +175,8 @@ fun OrangeShieldApp() {
             modifier = Modifier.padding(padding)
         ) {
             composable("painel") { PainelScreen() }
-            composable("inteligencia") { IntelligenceScreen() }
-            composable("analise") { AnaliseScreen() }
+            composable("inteligencia") { IntelligenceScreen(onAnalyzeNumber = { number -> navController.navigate("analise?number=${Uri.encode(number)}") }) }
+            composable("analise?number={number}", arguments = listOf(navArgument("number") { type = NavType.StringType; defaultValue = "" })) { entry -> AnaliseScreen(initialNumber = entry.arguments?.getString("number").orEmpty()) }
             composable("listas") { ListasScreen() }
             composable("whatsapp") { WhatsAppScreen() }
             composable("observatorio") { ObservatoryScreen() }
