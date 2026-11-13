@@ -442,7 +442,7 @@ private fun OwnNumberCard() {
                         }
                     },
                     modifier = Modifier.weight(1f)
-                ) { Text("Desativar") }
+                ) { Text("Remover número") }
             }
         }
     }
