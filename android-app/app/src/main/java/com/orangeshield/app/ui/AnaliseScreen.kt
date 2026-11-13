@@ -72,11 +72,11 @@ import kotlinx.coroutines.withContext
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AnaliseScreen() {
+fun AnaliseScreen(initialNumber: String = "") {
     val scope = rememberCoroutineScope()
     val store = EngineProvider.settingsStore
 
-    var number by remember { mutableStateOf("") }
+    var number by remember(initialNumber) { mutableStateOf(initialNumber) }
     var loading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var result by remember { mutableStateOf<CallAnalysis?>(null) }
