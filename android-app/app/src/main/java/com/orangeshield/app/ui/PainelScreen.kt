@@ -64,6 +64,7 @@ fun PainelScreen() {
     val context = LocalContext.current
     var showCallDisclosure by remember { mutableStateOf(false) }
     var showWhatsAppDisclosure by remember { mutableStateOf(false) }
+    var showNotificationDisclosure by remember { mutableStateOf(false) }
     val dao = EngineProvider.database.callEventDao()
 
     val total by dao.countTotal().collectAsStateWithLifecycle(initialValue = 0)
@@ -97,6 +98,28 @@ fun PainelScreen() {
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    if (showNotificationDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showNotificationDisclosure = false },
+            title = { Text("Notificações do ORANGE SHIELD") },
+            text = {
+                Text(
+                    "Esta permissão permite exibir alertas locais quando uma chamada for bloqueada ou identificada como suspeita. " +
+                    "Ela não dá acesso ao conteúdo das notificações de outros aplicativos. Você pode continuar sem conceder; a triagem de chamadas continuará ativa, mas os avisos do ORANGE SHIELD poderão não aparecer."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showNotificationDisclosure = false
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }) { Text("Permitir notificações") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNotificationDisclosure = false }) { Text("Agora não") }
+            }
+        )
     }
 
     if (showWhatsAppDisclosure) {
@@ -208,7 +231,7 @@ fun PainelScreen() {
                     Text("Permitir acesso a notificações")
                 }
                 TextButton(
-                    onClick = { notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                    onClick = { showNotificationDisclosure = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Conceder permissão de notificações (Android 13+)", fontSize = 12.sp)
