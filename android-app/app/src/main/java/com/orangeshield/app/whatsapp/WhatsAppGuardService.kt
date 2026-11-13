@@ -19,9 +19,9 @@ import java.security.MessageDigest
 /**
  * ORANGE SHIELD · GUARDIÃO WHATSAPP
  *
- * NotificationListenerService que intercepta as notificações do WhatsApp e
- * do WhatsApp Business, aplica o catálogo determinístico de golpes
- * (WhatsAppEngine) e registra o histórico local.
+ * NotificationListenerService com opt-in explícito: analisa apenas notificações
+ * do WhatsApp/WhatsApp Business, aplica o catálogo de golpes e guarda somente
+ * um fingerprint SHA-256 do texto, nunca o conteúdo original.
  *
  * IMPORTANTE: o WhatsApp não oferece API pública para bloquear automaticamente
  * uma conversa/remetente. Por isso o guardião NÃO bloqueia a mensagem de
