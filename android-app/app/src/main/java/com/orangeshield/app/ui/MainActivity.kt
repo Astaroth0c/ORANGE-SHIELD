@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -71,7 +72,8 @@ private val NAV_ITEMS = listOf(
     NavItem("painel", "Painel", Icons.Filled.Shield),
     NavItem("analise", "Análise", Icons.Filled.PhoneInTalk),
     NavItem("listas", "Listas", Icons.Filled.Block),
-    NavItem("whatsapp", "WhatsApp", Icons.Filled.Chat)
+    NavItem("whatsapp", "WhatsApp", Icons.Filled.Chat),
+    NavItem("observatorio", "Observatório", Icons.Filled.Insights)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -172,6 +174,7 @@ fun OrangeShieldApp() {
             composable("analise") { AnaliseScreen() }
             composable("listas") { ListasScreen() }
             composable("whatsapp") { WhatsAppScreen() }
+            composable("observatorio") { ObservatoryScreen() }
         }
     }
 }
