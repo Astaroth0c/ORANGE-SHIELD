@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.orangeshield.app.EngineProvider
-import com.orangeshield.app.data.CallEventEntity
 
 /**
  * Observatório local: visualizações calculadas exclusivamente a partir de
