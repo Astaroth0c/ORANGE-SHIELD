@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.PhoneInTalk
+import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -69,6 +70,7 @@ private data class NavItem(
 
 private val NAV_ITEMS = listOf(
     NavItem("painel", "Painel", Icons.Filled.Shield),
+    NavItem("inteligencia", "Radar", Icons.Filled.Radar),
     NavItem("analise", "Análise", Icons.Filled.PhoneInTalk),
     NavItem("listas", "Listas", Icons.Filled.Block),
     NavItem("whatsapp", "WhatsApp", Icons.Filled.Chat),
@@ -170,6 +172,7 @@ fun OrangeShieldApp() {
             modifier = Modifier.padding(padding)
         ) {
             composable("painel") { PainelScreen() }
+            composable("inteligencia") { IntelligenceScreen() }
             composable("analise") { AnaliseScreen() }
             composable("listas") { ListasScreen() }
             composable("whatsapp") { WhatsAppScreen() }
