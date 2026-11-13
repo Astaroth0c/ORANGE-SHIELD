@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
@@ -263,10 +264,25 @@ private fun HistorySuggestions() {
     val phoneDao = EngineProvider.database.phoneListDao()
     val scope = rememberCoroutineScope()
     val candidates by dao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    var search by remember { mutableStateOf("") }
+    var page by remember { mutableIntStateOf(0) }
+    val pageSize = 20
+    val filtered = remember(candidates, search) {
+        if (search.isBlank()) candidates else candidates.filter {
+            val digits = search.filter { ch -> ch.isDigit() }
+            (digits.isNotEmpty() && it.e164.contains(digits)) ||
+                it.suggestedLabel.contains(search, ignoreCase = true)
+        }
+    }
+    val pageCount = ((filtered.size + pageSize - 1) / pageSize).coerceAtLeast(1)
+    val safePage = page.coerceIn(0, pageCount - 1)
+    val visible = filtered.drop(safePage * pageSize).take(pageSize)
+    val listState = rememberLazyListState()
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        contentPadding = PaddingValues(bottom = 20.dp),
+        state = listState,
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
@@ -276,17 +292,45 @@ private fun HistorySuggestions() {
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it; page = 0 },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Buscar número ou classificação") }
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("\${filtered.size} resultados · página \${safePage + 1}/\${pageCount}",
+                    fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(
+                        onClick = { page = 0; scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage > 0
+                    ) { Text("Início") }
+                    OutlinedButton(
+                        onClick = { page = pageCount - 1; scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage < pageCount - 1
+                    ) { Text("Final") }
+                }
+            }
         }
-        if (candidates.isEmpty()) {
-            item { EmptyHint("Faça a varredura na aba Radar para preencher esta lista.") }
+        if (filtered.isEmpty()) {
+            item {
+                EmptyHint(if (candidates.isEmpty()) "Faça a varredura na aba Radar para preencher esta lista."
+                    else "Nenhum resultado corresponde à busca.")
+            }
         }
-        items(candidates, key = { it.e164 }) { item ->
+        items(visible, key = { it.e164 }) { item ->
             ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Text(formatPhone(item.e164), fontWeight = FontWeight.SemiBold)
                     Text(item.suggestedLabel, color = OrangePrimary, fontSize = 12.sp)
                     Text(
-                        "${item.totalCalls} chamadas · ${item.missedCalls} perdidas · ${item.blockedCalls} já marcadas como bloqueadas no aparelho",
+                        "\${item.totalCalls} chamadas · \${item.missedCalls} perdidas · \${item.blockedCalls} já marcadas como bloqueadas no aparelho",
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -310,6 +354,26 @@ private fun HistorySuggestions() {
                             modifier = Modifier.weight(1f)
                         ) { Text("Permitir") }
                     }
+                }
+            }
+        }
+        if (filtered.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { page = (safePage - 1).coerceAtLeast(0); scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage > 0
+                    ) { Text("Anterior") }
+                    Text("\${safePage + 1}/\${pageCount}", fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Button(
+                        onClick = { page = (safePage + 1).coerceAtMost(pageCount - 1); scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage < pageCount - 1
+                    ) { Text("Próxima") }
                 }
             }
         }
