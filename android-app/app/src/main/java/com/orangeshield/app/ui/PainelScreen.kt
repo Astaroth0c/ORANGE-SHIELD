@@ -99,6 +99,21 @@ fun PainelScreen() {
     val triagemAtiva = remember(resumeTick, roleManager) {
         roleManager?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true
     }
+    var roleStatusMessage by remember { mutableStateOf<String?>(null) }
+    val callScreeningRoleLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val granted = context.getSystemService(RoleManager::class.java)
+            ?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true
+        roleStatusMessage = if (granted) {
+            "Triagem autorizada pelo Android. O ORANGE-SHIELD já pode receber chamadas para análise."
+        } else if (result.resultCode == android.app.Activity.RESULT_OK) {
+            "O Android retornou confirmação, mas o papel não foi concedido. Confira o app de triagem nas configurações de chamadas."
+        } else {
+            "Autorização não concedida. Nenhuma chamada será interceptada pelo ORANGE-SHIELD."
+        }
+        resumeTick++
+    }
     val listenerAtivo = remember(resumeTick) { Notifier.isNotificationListenerEnabled(context) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -178,7 +193,22 @@ fun PainelScreen() {
             confirmButton = {
                 TextButton(onClick = {
                     showCallDisclosure = false
-                    requestCallScreeningRole(context)
+                    val manager = context.getSystemService(RoleManager::class.java)
+                    when {
+                        manager == null -> roleStatusMessage = "Este aparelho não disponibilizou o gerenciador de funções do Android."
+                        !manager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) ->
+                            roleStatusMessage = "Este aparelho não oferece a função de triagem de chamadas do Android."
+                        manager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) ->
+                            roleStatusMessage = "A triagem de chamadas já está autorizada neste aparelho."
+                        else -> try {
+                            callScreeningRoleLauncher.launch(
+                                manager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
+                            )
+                        } catch (error: Exception) {
+                            roleStatusMessage = "Não foi possível abrir a autorização do Android: ${error.message ?: "erro desconhecido"}"
+                        }
+                    }
+                    resumeTick++
                 }) { Text("Concordo e continuar") }
             },
             dismissButton = {
@@ -252,10 +282,21 @@ fun PainelScreen() {
                     active = triagemAtiva
                 )
                 Button(
-                    onClick = { showCallDisclosure = true },
-                    modifier = Modifier.fillMaxWidth()
+                    onClick = {
+                        roleStatusMessage = null
+                        showCallDisclosure = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = triagemSuportada && !triagemAtiva
                 ) {
-                    Text("Ativar triagem de chamadas")
+                    Text(if (triagemAtiva) "Triagem já autorizada" else "Ativar triagem de chamadas")
+                }
+                roleStatusMessage?.let { message ->
+                    Text(
+                        text = message,
+                        fontSize = 12.sp,
+                        color = if (triagemAtiva) EmeraldOk else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 StatusRow(
                     label = "Acesso a notificações (Guardião WhatsApp)",
@@ -455,32 +496,3 @@ private fun OwnNumberCard() {
     }
 }
 
-/** Abre o diálogo nativo do RoleManager para ROLE_CALL_SCREENING (Android 10+). */
-private fun requestCallScreeningRole(context: Context) {
-    val roleManager = context.getSystemService(RoleManager::class.java)
-    if (roleManager == null || !roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
-        Toast.makeText(
-            context,
-            "Triagem de chamadas não é suportada neste aparelho",
-            Toast.LENGTH_LONG
-        ).show()
-        return
-    }
-    if (roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
-        Toast.makeText(
-            context,
-            "A triagem de chamadas já está ativa",
-            Toast.LENGTH_SHORT
-        ).show()
-        return
-    }
-    try {
-        context.startActivity(roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
-    } catch (_: Exception) {
-        Toast.makeText(
-            context,
-            "Não foi possível abrir o diálogo de permissão",
-            Toast.LENGTH_LONG
-        ).show()
-    }
-}
