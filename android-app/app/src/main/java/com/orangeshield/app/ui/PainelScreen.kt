@@ -368,6 +368,7 @@ private fun StepLine(title: String, description: String) {
 
 @Composable
 private fun OwnNumberCard() {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val store = EngineProvider.settingsStore
     val settings by store.state.collectAsStateWithLifecycle()
