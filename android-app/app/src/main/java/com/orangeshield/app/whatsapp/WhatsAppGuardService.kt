@@ -77,7 +77,7 @@ class WhatsAppGuardService : NotificationListenerService() {
                     .joinToString("") { "%02x".format(it) }
 
                 // Deduplica republicações sem guardar o conteúdo original.
-                if (dao.countRecent(analysis.sender, fingerprint, now - DUPLICATE_WINDOW_MS) > 0) {
+                if (dao.countRecent(analysis.sender, "SHA-256:$fingerprint", now - DUPLICATE_WINDOW_MS) > 0) {
                     return@launch
                 }
 
