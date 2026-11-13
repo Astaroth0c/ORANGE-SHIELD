@@ -37,7 +37,7 @@ jobs:
             chmod 600 "$RUNNER_TEMP/orange-shield-upload.jks"
           fi
 
-      - name: Build release APK
+      - name: Build debug and release packages
         working-directory: android-app
         env:
           ORANGE_SIGNING_STORE_FILE: ${{ runner.temp }}/orange-shield-upload.jks
@@ -46,17 +46,23 @@ jobs:
           ORANGE_SIGNING_KEY_PASSWORD: ${{ secrets.ORANGE_SIGNING_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease --no-daemon --console=plain
+          ./gradlew assembleDebug assembleRelease bundleRelease --no-daemon --console=plain
 
-      - name: Generate APK checksum
-        run: sha256sum android-app/app/build/outputs/apk/release/app-release.apk android-app/app/build/outputs/bundle/release/app-release.aab > SHA256SUMS.txt
+      - name: Generate package checksums
+        run: |
+          sha256sum \
+            android-app/app/build/outputs/apk/debug/app-debug.apk \
+            android-app/app/build/outputs/apk/release/app-release.apk \
+            android-app/app/build/outputs/bundle/release/app-release.aab \
+            > SHA256SUMS.txt
 
-      - name: Upload APK artifact
+      - name: Upload Android test and release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ORANGE-SHIELD-v1.1.0
+          name: ORANGE-SHIELD-v1.1.0-android
           path: |
+            android-app/app/build/outputs/apk/debug/app-debug.apk
             android-app/app/build/outputs/apk/release/app-release.apk
-            SHA256SUMS.txt
             android-app/app/build/outputs/bundle/release/app-release.aab
+            SHA256SUMS.txt
           if-no-files-found: error
