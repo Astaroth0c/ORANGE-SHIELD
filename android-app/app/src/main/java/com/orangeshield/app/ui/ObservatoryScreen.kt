@@ -3,6 +3,7 @@ package com.orangeshield.app.ui
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -154,7 +155,7 @@ fun ObservatoryScreen() {
 }
 
 @Composable
-private fun GlassCard(content: @Composable Column.() -> Unit) {
+private fun GlassCard(content: @Composable ColumnScope.() -> Unit) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
