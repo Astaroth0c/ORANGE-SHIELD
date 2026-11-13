@@ -20,7 +20,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -31,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -104,8 +107,14 @@ fun OrangeShieldApp() {
     LaunchedEffect(Unit) { store.load() }
 
     Scaffold(
+        containerColor = DarkBackground,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = DarkBackground,
+                    scrolledContainerColor = DarkSurface,
+                    titleContentColor = LightOnDark
+                ),
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -149,7 +158,11 @@ fun OrangeShieldApp() {
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = DarkSurface,
+                contentColor = LightOnDark,
+                tonalElevation = 12.dp
+            ) {
                 NAV_ITEMS.forEach { item ->
                     NavigationBarItem(
                         selected = currentRoute == item.route,
@@ -163,7 +176,14 @@ fun OrangeShieldApp() {
                             }
                         },
                         icon = { Icon(imageVector = item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) }
+                        label = { Text(item.label, maxLines = 1, fontSize = 10.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = OrangePrimary,
+                            selectedTextColor = OrangeSecondary,
+                            indicatorColor = Color(0xFF3A2115),
+                            unselectedIconColor = MutedOnDark,
+                            unselectedTextColor = MutedOnDark
+                        )
                     )
                 }
             }
