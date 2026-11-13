@@ -65,7 +65,7 @@ export async function GET() {
     db.callEvent.count({ where: { category: "spoofing", decision: "BLOCK" } }),
     db.callEvent.findMany({
       where: { occurredAt: { gte: weekAgo } },
-      select: { decision: true, riskScore: true, e164: true },
+      select: { decision: true, riskScore: true, e164: true, occurredAt: true },
     }),
     db.smsMessage.count({ where: { decision: "BLOCK", occurredAt: { gte: weekAgo } } }),
     db.whatsAppMessage.count({ where: { decision: "BLOCK", occurredAt: { gte: weekAgo } } }),
@@ -109,7 +109,7 @@ export async function GET() {
     const cur = threatMap.get(r.e164) ?? { e164: r.e164, hits: 0, blocked: 0, lastSeen: new Date(0) };
     cur.hits++;
     if (r.decision === "BLOCK") cur.blocked++;
-    cur.lastSeen = new Date(now);
+    if (r.occurredAt > cur.lastSeen) cur.lastSeen = r.occurredAt;
     threatMap.set(r.e164, cur);
   }
   const topThreats = [...threatMap.values()]
