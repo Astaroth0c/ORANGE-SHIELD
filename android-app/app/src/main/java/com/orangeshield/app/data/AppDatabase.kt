@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * ORANGE SHIELD — banco local (Room), versão 1.
@@ -16,9 +18,10 @@ import androidx.room.RoomDatabase
         ReputationEntity::class,
         BlockedEntity::class,
         AllowedEntity::class,
-        WhatsAppEventEntity::class
+        WhatsAppEventEntity::class,
+        HistoryCandidateEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,6 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun reputationDao(): ReputationDao
     abstract fun phoneListDao(): PhoneListDao
     abstract fun whatsappEventDao(): WhatsAppEventDao
+    abstract fun historyCandidateDao(): HistoryCandidateDao
 }
 
 /**
@@ -33,6 +37,13 @@ abstract class AppDatabase : RoomDatabase() {
  * [getInstance] é idempotente e seguro para uso concorrente
  * (MainActivity, CallScreeningService e NotificationListenerService).
  */
+
+private val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("CREATE TABLE IF NOT EXISTS history_candidates (e164 TEXT NOT NULL PRIMARY KEY, totalCalls INTEGER NOT NULL, missedCalls INTEGER NOT NULL, rejectedCalls INTEGER NOT NULL, blockedCalls INTEGER NOT NULL, firstSeenAt INTEGER NOT NULL, lastSeenAt INTEGER NOT NULL, suggestedLabel TEXT NOT NULL, reviewed INTEGER NOT NULL, scannedAt INTEGER NOT NULL)")
+    }
+}
+
 object DatabaseProvider {
 
     @Volatile
@@ -44,6 +55,6 @@ object DatabaseProvider {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "orange_shield.db"
-            ).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2).build().also { instance = it }
         }
 }
