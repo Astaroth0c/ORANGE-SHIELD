@@ -10,6 +10,9 @@ on:
     paths: [ 'android-app/**', '.github/workflows/android.yml' ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -83,3 +86,17 @@ jobs:
           name: ORANGE-SHIELD-v2.0.0-beta.1-android
           path: dist/*
           if-no-files-found: error
+
+      - name: Publish downloadable GitHub prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0.0-beta.1-build-${{ github.run_number }}
+          name: ORANGE-SHIELD 2.0.0-beta.1 — Build ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            dist/*.apk
+            dist/*.aab
+            dist/BUILD-NOTES.txt
+            dist/SHA256SUMS.txt
