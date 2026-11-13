@@ -304,7 +304,7 @@ private fun HistorySuggestions() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("\${filtered.size} resultados · página \${safePage + 1}/\${pageCount}",
+                Text("${filtered.size} resultados · página ${safePage + 1}/${pageCount}",
                     fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     OutlinedButton(
@@ -330,7 +330,7 @@ private fun HistorySuggestions() {
                     Text(formatPhone(item.e164), fontWeight = FontWeight.SemiBold)
                     Text(item.suggestedLabel, color = OrangePrimary, fontSize = 12.sp)
                     Text(
-                        "\${item.totalCalls} chamadas · \${item.missedCalls} perdidas · \${item.blockedCalls} já marcadas como bloqueadas no aparelho",
+                        "${item.totalCalls} chamadas · ${item.missedCalls} perdidas · ${item.blockedCalls} já marcadas como bloqueadas no aparelho",
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -368,7 +368,7 @@ private fun HistorySuggestions() {
                         onClick = { page = (safePage - 1).coerceAtLeast(0); scope.launch { listState.animateScrollToItem(0) } },
                         enabled = safePage > 0
                     ) { Text("Anterior") }
-                    Text("\${safePage + 1}/\${pageCount}", fontSize = 11.sp,
+                    Text("${safePage + 1}/${pageCount}", fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Button(
                         onClick = { page = (safePage + 1).coerceAtMost(pageCount - 1); scope.launch { listState.animateScrollToItem(0) } },
