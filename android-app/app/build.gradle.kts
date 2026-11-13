@@ -13,13 +13,26 @@ android {
         applicationId = "com.orangeshield.app"
         minSdk = 29
         targetSdk = 34
-        versionCode = 4
-        versionName = "0.9.1"
+        versionCode = 5
+        versionName = "1.0.0"
+    }
+
+    signingConfigs {
+        create("release") {
+            // Chave de assinatura do projeto (commitada de propósito: projeto
+            // pessoal — permite rebuilds e atualizações instaláveis por cima.
+            // Troque por uma chave privada sua antes de publicar em loja.
+            storeFile = file("../orangeshield-release.keystore")
+            storePassword = "OrangeShield2024!"
+            keyAlias = "orangeshield"
+            keyPassword = "OrangeShield2024!"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

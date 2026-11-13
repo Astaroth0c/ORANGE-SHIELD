@@ -7,40 +7,57 @@ listas pessoais e painel local. Toda a inteligência do console web
 sem rede, sem telemetria, sem aleatoriedade (motor determinístico).
 
 - **Pacote:** `com.orangeshield.app`
-- **Versão:** 0.7.0 (versionCode 1)
+- **Versão:** 1.0.0 (versionCode 5) — **APK de release assinado** em [`../download/ORANGE-SHIELD-v1.0.0.apk`](../download/ORANGE-SHIELD-v1.0.0.apk) e nas Releases do GitHub
 - **Stack:** Kotlin 2.0.20 · AGP 8.5.2 · Jetpack Compose (Material3) · Room 2.6.1 (KSP) · corrotinas
 - **SDK:** compileSdk/targetSdk 34 · minSdk 29 (Android 10+ — necessário para `CallScreeningService` + `RoleManager`)
 - **Idioma:** pt-BR em toda a UI
 
 ---
 
-## 1. Pré-requisitos
+## 1. Instalação do APK (sem Android Studio)
+
+1. Baixe `ORANGE-SHIELD-v1.0.0.apk` (pasta `download/` do repositório ou a aba **Releases**).
+2. Toque no APK no aparelho (Android 10+) e autorize a instalação de fontes desconhecidas.
+3. Abra o app e ative, na aba **Painel**: **Triagem de chamadas** (diálogo do sistema),
+   **Acesso a notificações** (Guardião WhatsApp) e **Notificações do app** (Android 13+).
+
+> **Sem dados simulados:** histórico, reputação e estatísticas refletem apenas
+> chamadas e mensagens reais processadas no aparelho. A aba **Análise** roda o
+> motor em modo **somente leitura** (não grava nada no histórico).
+
+SHA-256 do APK v1.0.0:
+`44bbb854279b2ee30848bb013014fb940b246fc14f0a6dca4f78e7996ce16ada`
+
+Assinatura: chave commitada `orangeshield-release.keystore` (alias `orangeshield`,
+senha `OrangeShield2024!`) — intencional para projeto pessoal: garante rebuilds e
+atualizações instaláveis por cima da mesma assinatura. Troque por uma chave
+privada sua antes de publicar em loja.
+
+## 2. Pré-requisitos (para compilar)
 
 | Ferramenta | Versão recomendada |
 |---|---|
-| Android Studio | Koala 2024.1+ (com SDK 34 instalado) |
-| JDK | 17 (o do Studio embutido serve) |
-| Gradle | 8.7 (via wrapper — ver abaixo) |
+| JDK | 17 |
+| Android SDK | platform 34 + build-tools 34.0.0 |
+| Gradle | 8.7 (via wrapper versionado no repo) |
 
-## 2. Como abrir e buildar
+## 3. Como buildar
 
-Este repositório contém o `gradle-wrapper.properties`, mas **não** o binário do
-wrapper (`gradle-wrapper.jar`). Duas opções:
+O wrapper está versionado (`gradlew` + `gradle-wrapper.jar`) — não precisa de
+Gradle instalado:
 
-1. **Android Studio (recomendado):** abra a pasta `android-app/` como projeto.
-   O Studio gera o wrapper automaticamente ao sincronizar/rodar.
-2. **Linha de comando:** com um Gradle instalado, execute dentro de `android-app/`:
+```bash
+cd android-app
+./gradlew assembleDebug      # APK debug em app/build/outputs/apk/debug/
+./gradlew assembleRelease    # APK release ASSINADO em app/build/outputs/apk/release/
+./gradlew installDebug       # instala no dispositivo/emulador conectado
+```
 
-   ```bash
-   gradle wrapper --gradle-version 8.7
-   ./gradlew assembleDebug          # APK em app/build/outputs/apk/debug/
-   ./gradlew installDebug           # instala no dispositivo/emulador conectado
-   ```
+No Android Studio: abra a pasta `android-app/` como projeto e rode normalmente.
+O build resolve dependências de `google()` e Maven Central; em IPs com rate-limit
+(429), o projeto já inclui o espelho Aliyun como reserva (ver `settings.gradle.kts`).
 
-> Não é possível buildar em ambientes sem o Android SDK — o código foi escrito
-> para compilar sem ajustes, mas a validação final exige o SDK 34.
-
-## 3. Fluxos de permissão (pt-BR, executados no app)
+## 4. Fluxos de permissão (pt-BR, executados no app)
 
 | Permissão | Como conceder | Onde no app |
 |---|---|---|
@@ -49,7 +66,7 @@ wrapper (`gradle-wrapper.jar`). Duas opções:
 | **Notificações do app** (`POST_NOTIFICATIONS`, Android 13+) | Diálogo de runtime. Sem ela os alertas de bloqueio ficam silenciados (a triagem continua funcionando). | Painel → “Conceder permissão de notificações” |
 | `READ_PHONE_STATE` / `READ_CALL_LOG` | Declaradas no manifesto para cenários de integração futura (registro de chamadas). | — |
 
-## 4. Arquitetura
+## 5. Arquitetura
 
 ```
 android-app/
@@ -75,7 +92,7 @@ android-app/
          ├─ whatsapp/WhatsAppGuardService.kt        # NotificationListenerService
          └─ ui/                             # Compose Material3 (tema laranja escuro)
             ├─ Theme.kt · MainActivity.kt
-            ├─ PainelScreen.kt · SimuladorScreen.kt
+            ├─ PainelScreen.kt · AnaliseScreen.kt
             ├─ ListasScreen.kt · WhatsAppScreen.kt
 ```
 
@@ -92,7 +109,7 @@ android-app/
   (`buildBlockGuidanceIntent`). Acessos concedidos valerão para a detecção de
   mensagens, não para interferir no app.
 
-## 5. O pipeline de 4 passos (identical ao console web)
+## 6. O pipeline de 4 passos (idêntico ao console web)
 
 | Passo | Nome | O que valida | Flags principais (pesos) |
 |---|---|---|---|
@@ -111,7 +128,7 @@ cobrança (+45), denúncias (máx. 60, ponderadas pela confiança), internaciona
 (+100), shortcode (+25), insistência (+30/+50), política de desconhecidos (+100),
 empresa verificada (−40), flags de spoofing (pesos do Passo 1–4).
 
-## 6. Limitações conhecidas
+## 7. Limitações conhecidas
 
 - **Bloqueio automático de WhatsApp é impossível** via API pública — o fluxo é
   análise + alerta + orientação de bloqueio manual (deep link `wa.me`).
@@ -125,7 +142,7 @@ empresa verificada (−40), flags de spoofing (pesos do Passo 1–4).
 - Reputação é **local** (base do dispositivo); a sincronização coletiva
   multi-dispositivo fica para uma fase futura.
 
-## 7. Correspondência com os motores do console web
+## 8. Correspondência com os motores do console web
 
 | Console web (TypeScript) | App Android (Kotlin) | Observações |
 |---|---|---|
@@ -134,13 +151,16 @@ empresa verificada (−40), flags de spoofing (pesos do Passo 1–4).
 | `src/lib/engine/spoof.ts` | `engine/SpoofDetector.kt` | Pipeline de 4 passos idêntico (pesos, DDDs da ANATEL, neighbor spoofing) |
 | `src/lib/engine/whatsapp-engine.ts` | `engine/WhatsAppEngine.kt` | Catálogo determinístico pt-BR (código de 6 dígitos, falso parente + PIX, links, prêmio, cadeias, PIX urgente) |
 | `src/lib/engine/types.ts` | `engine/EngineTypes.kt` + `SettingsStore.kt` | `EngineSettings` com os mesmos padrões; `ruleVersion "v1.2.0"` |
-| Console (React) | `ui/*.kt` (Compose) | Painel ↔ Dashboard, Simulador ↔ Simulator, Listas ↔ Lists, WhatsApp ↔ WhatsApp |
+| Console (React) | `ui/*.kt` (Compose) | Painel ↔ Dashboard, Análise ↔ Simulator (somente leitura), Listas ↔ Lists, WhatsApp ↔ WhatsApp |
 
-## 8. Testando rapidamente (aba Simulador)
+## 9. Testando rapidamente (aba Análise — somente leitura)
+
+A aba **Análise** roda o motor real sobre qualquer número informado **sem gravar
+nada** no histórico (parâmetro `record = false`); as estatísticas do Painel
+continuam refletindo apenas chamadas reais triadas pelo serviço.
 
 - `+55 11 99999-9999` → checagens OK (se o seu número estiver configurado, o
   neighbor spoofing também é avaliado).
 - `+550011999999999` → `INTERNATIONAL_ANOMALY` (+35).
 - `+1 999 999 99999` (formato inválido) → `BAD_INTL_LENGTH`.
 - `0303 317 2000` → telemarketing Anatel (+90 com a regra ativa).
-- Analise o mesmo número 3+ vezes em 15 minutos → `RAPID_REDIAL` (+40).

@@ -102,7 +102,7 @@ bunx tsx prisma/seed.ts
 
 ## 🤖 App Android (`android-app/`)
 
-Cliente Android nativo (Kotlin + Jetpack Compose, Material 3 tema laranja escuro) que roda a mesma inteligência **no aparelho**, com Room como base local:
+Cliente Android nativo (Kotlin + Jetpack Compose, Material 3 tema laranja escuro) que roda a mesma inteligência **no aparelho**, com Room como base local. **APK de release assinado disponível** em [`download/ORANGE-SHIELD-v1.0.0.apk`](download/ORANGE-SHIELD-v1.0.0.apk) e na aba **Releases** do GitHub.
 
 | Componente | Papel |
 |------------|-------|
@@ -111,9 +111,21 @@ Cliente Android nativo (Kotlin + Jetpack Compose, Material 3 tema laranja escuro
 | `engine/SpoofDetector.kt` | Os **mesmos 4 passos** anti-spoofing do console web (pesos e textos idênticos) |
 | `engine/CallRuleEngine.kt` | Call Guard com score 0–100, evidências e thresholds `v1.2.0` |
 | `engine/WhatsAppEngine.kt` | Catálogo determinístico de golpes BR: phishing do código de 6 dígitos, falso parente + PIX, links, prêmios |
-| `ui/` | Painel (stats + ativação de permissões), Simulador (4 passos visuais), Listas, WhatsApp |
+| `ui/` | Painel (stats + ativação de permissões), **Análise** (4 passos visuais, somente leitura), Listas, WhatsApp |
 
-Build: Android Studio (JDK 17) → abrir `android-app/` → `assembleDebug`. Detalhes em [`android-app/README.md`](android-app/README.md).
+### 📲 Instalação do APK (sem Android Studio)
+
+1. Baixe `ORANGE-SHIELD-v1.0.0.apk` (Releases do GitHub ou pasta `download/`).
+2. No aparelho (Android 10+), toque no arquivo e autorize "Instalar de fontes desconhecidas" para o navegador/gerenciador de arquivos.
+3. Abra o app e conceda, na aba **Painel**:
+   - **Triagem de chamadas** (diálogo nativo do sistema);
+   - **Acesso a notificações** (para o Guardião WhatsApp);
+   - **Notificações do app** (Android 13+).
+4. Pronto: as chamadas passam a ser triadas on-device (score 0–100, 4 passos) — **sem dados simulados**: histórico, reputação e estatísticas refletem apenas chamadas reais do aparelho.
+
+SHA-256 do APK v1.0.0: `44bbb854279b2ee30848bb013014fb940b246fc14f0a6dca4f78e7996ce16ada`
+
+Build: `cd android-app && ./gradlew assembleRelease` (wrapper versionado incluído; JDK 17 + SDK 34). Assinado com a chave commitada `orangeshield-release.keystore` (projeto pessoal — troque por chave privada antes de publicar em loja). Detalhes em [`android-app/README.md`](android-app/README.md).
 
 ## 🗺️ Histórico de versões
 
@@ -124,6 +136,10 @@ Build: Android Studio (JDK 17) → abrir `android-app/` → `assembleDebug`. Det
 | v0.5.0 | Backup & portabilidade JSON |
 | v0.6.0 | **Pipeline anti-spoofing em 4 passos** (formato → apresentação internacional → frequência → reputação) + normalização internacional correta |
 | v0.7.0 | **App Android nativo** (CallScreening + WhatsApp Guard + Room + 4 passos) |
+| v0.8.0 | **Sem dados simulados**: aba Análise somente leitura (não grava no histórico real); correção da permissão `BIND_SCREENING_SERVICE` e de `CallResponse` |
+| v0.9.0 | Responsividade/alinhamento da UI (Compose), ícone adaptativo, gradle wrapper versionado |
+| v0.9.1 | Correções do primeiro build executado (compilação limpa) + repositórios Maven resilientes |
+| v1.0.0 | **APK de release assinado** + CI do Android no GitHub Actions + documentação de instalação |
 
 ## 🔒 Regra de ouro
 
