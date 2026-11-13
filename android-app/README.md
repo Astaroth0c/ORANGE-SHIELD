@@ -28,10 +28,7 @@ sem rede, sem telemetria, sem aleatoriedade (motor determinístico).
 SHA-256 do APK v1.0.0:
 `44bbb854279b2ee30848bb013014fb940b246fc14f0a6dca4f78e7996ce16ada`
 
-Assinatura: chave commitada `orangeshield-release.keystore` (alias `orangeshield`,
-senha `OrangeShield2024!`) — intencional para projeto pessoal: garante rebuilds e
-atualizações instaláveis por cima da mesma assinatura. Troque por uma chave
-privada sua antes de publicar em loja.
+**Atenção à assinatura:** o APK v1.0.0 foi assinado com uma chave que esteve armazenada no repositório público. Considere essa chave comprometida. A v1.1.0 deve usar credenciais protegidas como secrets do ambiente de build. Uma chave nova impede a atualização direta sobre a v1.0.0: será necessário exportar os dados, desinstalar a versão antiga e instalar a nova. Não publique novas versões com a chave antiga.
 
 ## 2. Pré-requisitos (para compilar)
 
@@ -64,7 +61,7 @@ O build resolve dependências de `google()` e Maven Central; em IPs com rate-lim
 | **Triagem de chamadas** (`ROLE_CALL_SCREENING`) | Diálogo nativo do `RoleManager` (Android 10+). Enquanto o papel não estiver ativo, o sistema não invoca o serviço. | Painel → “Ativar triagem de chamadas” |
 | **Acesso a notificações** (NotificationListenerService) | `Configurações → Acesso a notificações` (`ACTION_NOTIFICATION_LISTENER_SETTINGS`). | Painel / WhatsApp → “Permitir acesso a notificações” |
 | **Notificações do app** (`POST_NOTIFICATIONS`, Android 13+) | Diálogo de runtime. Sem ela os alertas de bloqueio ficam silenciados (a triagem continua funcionando). | Painel → “Conceder permissão de notificações” |
-| `READ_PHONE_STATE` / `READ_CALL_LOG` | Declaradas no manifesto para cenários de integração futura (registro de chamadas). | — |
+| Permissões sensíveis de telefone e internet | Não são solicitadas nesta versão: a triagem usa o papel nativo `ROLE_CALL_SCREENING` e o processamento permanece local. | — |
 
 ## 5. Arquitetura
 
@@ -98,12 +95,14 @@ android-app/
 
 ### Decisões de engenharia
 
+- **Privacidade local:** o manifesto remove permissões de leitura do histórico de chamadas, estado do telefone, inicialização automática e internet que não eram utilizadas. `allowBackup=false` evita incluir histórico e configurações em backups automáticos do Android.
 - **Sem Hilt:** `EngineProvider` (object) entrega banco/motores/configurações; os
   serviços chamam `EngineProvider.init(this)` no `onCreate`.
 - **Fail-open na triagem:** qualquer erro/timeout (2,5 s) em `onScreenCall`
   responde **permitindo** a chamada — nunca bloqueamos por falha.
 - **Chamadas bloqueadas** ficam no registro de chamadas (`skipCallLog = false`)
   e sem notificação nativa (`skipNotification = true`, pois o app alerta).
+- **Modo SILENCE:** a decisão agora também chama `setSilenceCall(true)` no Android; a chamada continua recebida, mas o toque é silenciado. O app registra uma notificação informativa.
 - **WhatsApp:** não existe API pública de bloqueio automático; o guardião
   classifica, alerta e abre o deep link `wa.me` para bloqueio manual
   (`buildBlockGuidanceIntent`). Acessos concedidos valerão para a detecção de
