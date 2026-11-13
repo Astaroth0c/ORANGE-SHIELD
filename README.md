@@ -142,7 +142,7 @@ Build: `cd android-app && ./gradlew assembleRelease` (wrapper versionado incluí
 | v0.5.0 | Backup & portabilidade JSON |
 | v0.6.0 | **Pipeline anti-spoofing em 4 passos** (formato → apresentação internacional → frequência → reputação) + normalização internacional correta |
 | v0.7.0 | **App Android nativo** (CallScreening + WhatsApp Guard + Room + 4 passos) |
-| v0.8.0 | **Sem dados simulados**: aba Análise somente leitura (não grava no histórico real); correção da permissão `BIND_SCREENING_SERVICE` e de `CallResponse` |
+| v0.8.0 | **Sem dados simulados**: aba Análise somente leitura (não grava no histórico real); correção do uso de `CallScreeningService.CallResponse`. A permissão de vinculação foi validada e corrigida novamente na v1.1.0 |
 | v0.9.0 | Responsividade/alinhamento da UI (Compose), ícone adaptativo, gradle wrapper versionado |
 | v0.9.1 | Correções do primeiro build executado (compilação limpa) + repositórios Maven resilientes |
 | v1.0.0 | **APK de release assinado** + CI do Android no GitHub Actions + documentação de instalação |
