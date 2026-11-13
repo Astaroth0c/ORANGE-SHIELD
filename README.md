@@ -146,7 +146,7 @@ Build: `cd android-app && ./gradlew assembleRelease` (wrapper versionado incluí
 | v0.9.0 | Responsividade/alinhamento da UI (Compose), ícone adaptativo, gradle wrapper versionado |
 | v0.9.1 | Correções do primeiro build executado (compilação limpa) + repositórios Maven resilientes |
 | v1.0.0 | **APK de release assinado** + CI do Android no GitHub Actions + documentação de instalação |
-| v1.1.0 (em desenvolvimento) | Moderação de denúncias protegida por token e transição atômica; estatística de última ocorrência corrigida; build TypeScript rigoroso; atualização do banco sem `--accept-data-loss`; permissões Android minimizadas; modo SILENCE aplicado ao toque; APK debug isolado (`.dev`) para testes lado a lado; assinatura release movida para variáveis de ambiente |
+| v1.1.0 (em desenvolvimento) | Moderação de denúncias protegida por token e transição atômica; estatística de última ocorrência corrigida; build TypeScript rigoroso; atualização do banco sem `--accept-data-loss`; permissões Android minimizadas; permissão correta do CallScreeningService; modo SILENCE aplicado ao toque; APK debug isolado (`.dev`) para testes lado a lado; assinatura release movida para variáveis de ambiente |
 
 ## 🔒 Regra de ouro
 
