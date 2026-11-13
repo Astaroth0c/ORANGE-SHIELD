@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
@@ -61,6 +62,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PainelScreen() {
     val context = LocalContext.current
+    var showCallDisclosure by remember { mutableStateOf(false) }
     val dao = EngineProvider.database.callEventDao()
 
     val total by dao.countTotal().collectAsStateWithLifecycle(initialValue = 0)
@@ -94,6 +96,29 @@ fun PainelScreen() {
                 Toast.LENGTH_LONG
             ).show()
         }
+    }
+
+    if (showCallDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showCallDisclosure = false },
+            title = { Text("Triagem inteligente de chamadas") },
+            text = {
+                Text(
+                    "Ao ativar a função, o Android entrega ao ORANGE SHIELD os números das chamadas recebidas para análise local de formato, frequência e sinais de spoofing. " +
+                    "O resultado pode permitir, alertar ou bloquear conforme as regras que você configurar. O histórico guarda o número, pontuação, decisão e evidências no aparelho. " +
+                    "O app não lê seu histórico telefônico nem envia esses dados a servidores. Você pode não ativar ou retirar o papel de triagem nas configurações do Android."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showCallDisclosure = false
+                    requestCallScreeningRole(context)
+                }) { Text("Concordo e continuar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCallDisclosure = false }) { Text("Agora não") }
+            }
+        )
     }
 
     Column(
@@ -136,7 +161,7 @@ fun PainelScreen() {
                     active = triagemAtiva
                 )
                 Button(
-                    onClick = { requestCallScreeningRole(context) },
+                    onClick = { showCallDisclosure = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Ativar triagem de chamadas")
