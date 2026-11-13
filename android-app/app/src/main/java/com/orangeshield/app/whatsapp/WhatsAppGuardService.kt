@@ -42,6 +42,12 @@ class WhatsAppGuardService : NotificationListenerService() {
         val packageName = sbn.packageName
         if (packageName != PACKAGE_WHATSAPP && packageName != PACKAGE_WHATSAPP_BUSINESS) return
 
+        // Process notifications only after the user has explicitly accepted
+        // the in-app disclosure and enabled Android's notification access.
+        val consent = getSharedPreferences(PRIVACY_PREFS, MODE_PRIVATE)
+            .getBoolean(KEY_WHATSAPP_CONSENT, false)
+        if (!consent) return
+
         val extras = sbn.notification?.extras ?: return
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim().orEmpty()
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.trim().orEmpty()
@@ -74,7 +80,7 @@ class WhatsAppGuardService : NotificationListenerService() {
                 dao.insert(
                     WhatsAppEventEntity(
                         sender = analysis.sender,
-                        content = text,
+                        content = STORED_CONTENT_NOTICE,
                         decision = analysis.decision.name,
                         riskScore = analysis.riskScore,
                         category = analysis.category,
@@ -126,5 +132,8 @@ class WhatsAppGuardService : NotificationListenerService() {
         const val PACKAGE_WHATSAPP_BUSINESS = "com.whatsapp.w4b"
         const val DUPLICATE_WINDOW_MS = 30_000L
         const val FORWARDED_MARKER = "encaminhada muitas vezes"
+        const val PRIVACY_PREFS = "orange_shield_privacy"
+        const val KEY_WHATSAPP_CONSENT = "whatsapp_notification_access_consent"
+        const val STORED_CONTENT_NOTICE = "Conteúdo analisado localmente; texto original não armazenado."
     }
 }
