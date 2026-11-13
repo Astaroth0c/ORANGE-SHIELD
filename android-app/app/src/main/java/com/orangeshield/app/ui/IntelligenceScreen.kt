@@ -66,7 +66,8 @@ fun IntelligenceScreen() {
     val pageSize = 20
     val filteredCandidates = remember(candidates, search) {
         if (search.isBlank()) candidates else candidates.filter {
-            it.e164.contains(search.filter { ch -> ch.isDigit() }) ||
+            val digitsQuery = search.filter { ch -> ch.isDigit() }
+            (digitsQuery.isNotEmpty() && it.e164.contains(digitsQuery)) ||
                 it.suggestedLabel.contains(search, ignoreCase = true)
         }
     }
