@@ -47,7 +47,7 @@ fun ObservatoryScreen() {
     val prefixGroups = candidates.groupBy { number ->
         val digits = number.e164.filter { it.isDigit() }
         when {
-            digits.startsWith("55") && digits.length >= 4 -> "+\${digits.take(4)}"
+            digits.startsWith("55") && digits.length >= 4 -> "+${digits.take(4)}"
             digits.length >= 2 -> digits.take(2)
             else -> "Outros"
         }
