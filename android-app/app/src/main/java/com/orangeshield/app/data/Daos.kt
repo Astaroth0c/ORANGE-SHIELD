@@ -110,12 +110,12 @@ interface WhatsAppEventDao {
     @Query("SELECT * FROM whatsapp_events WHERE sender = :sender")
     suspend fun findBySender(sender: String): List<WhatsAppEventEntity>
 
-    /** Deduplicação por remetente e janela; não exige persistir o conteúdo da mensagem. */
+    /** Deduplicação por fingerprint SHA-256; o texto original não é persistido. */
     @Query(
         "SELECT COUNT(*) FROM whatsapp_events " +
-            "WHERE sender = :sender AND occurredAt >= :since"
+            "WHERE sender = :sender AND content = :fingerprint AND occurredAt >= :since"
     )
-    suspend fun countRecent(sender: String, since: Long): Int
+    suspend fun countRecent(sender: String, fingerprint: String, since: Long): Int
 
     @Query("SELECT * FROM whatsapp_events ORDER BY occurredAt DESC LIMIT :limit")
     fun listRecent(limit: Int): Flow<List<WhatsAppEventEntity>>
