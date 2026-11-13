@@ -125,7 +125,7 @@ Cliente Android nativo (Kotlin + Jetpack Compose, Material 3 tema laranja escuro
 
 SHA-256 do APK v1.0.0: `44bbb854279b2ee30848bb013014fb940b246fc14f0a6dca4f78e7996ce16ada`
 
-Build: `cd android-app && ./gradlew assembleRelease` (wrapper versionado incluído; JDK 17 + SDK 34). Assinado com a chave commitada `orangeshield-release.keystore` (projeto pessoal — troque por chave privada antes de publicar em loja). Detalhes em [`android-app/README.md`](android-app/README.md).
+Build: `cd android-app && ./gradlew assembleRelease` (wrapper versionado incluído; JDK 17 + SDK 34). **A chave usada na v1.0.0 esteve exposta no repositório público; não reutilize essa credencial em novas distribuições.** Consulte [`android-app/README.md`](android-app/README.md) antes de gerar uma nova assinatura.
 
 ## 🗺️ Histórico de versões
 
@@ -140,6 +140,7 @@ Build: `cd android-app && ./gradlew assembleRelease` (wrapper versionado incluí
 | v0.9.0 | Responsividade/alinhamento da UI (Compose), ícone adaptativo, gradle wrapper versionado |
 | v0.9.1 | Correções do primeiro build executado (compilação limpa) + repositórios Maven resilientes |
 | v1.0.0 | **APK de release assinado** + CI do Android no GitHub Actions + documentação de instalação |
+| v1.1.0 (em desenvolvimento) | Aprovação de denúncias protegida por token administrativo; estatística de última ocorrência corrigida; build TypeScript rigoroso; atualização do banco sem `--accept-data-loss`; permissões Android minimizadas; modo SILENCE aplicado ao toque da chamada |
 
 ## 🔒 Regra de ouro
 
