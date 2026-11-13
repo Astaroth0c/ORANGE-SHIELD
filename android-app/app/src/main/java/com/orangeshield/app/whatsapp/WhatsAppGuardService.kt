@@ -73,7 +73,7 @@ class WhatsAppGuardService : NotificationListenerService() {
                 val now = System.currentTimeMillis()
 
                 // Evita duplicar o evento quando o WhatsApp republica/atualiza a notificação.
-                if (dao.countRecent(analysis.sender, text, now - DUPLICATE_WINDOW_MS) > 0) {
+                if (dao.countRecent(analysis.sender, now - DUPLICATE_WINDOW_MS) > 0) {
                     return@launch
                 }
 
