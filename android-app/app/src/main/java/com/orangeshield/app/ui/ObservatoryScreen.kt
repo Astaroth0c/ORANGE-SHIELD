@@ -9,11 +9,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -152,6 +154,7 @@ private fun MetricCard(label: String, value: String, modifier: Modifier = Modifi
 
 @Composable
 private fun DecisionBar(label: String, value: Int, total: Int, color: Color) {
+    val trackColor = MaterialTheme.colorScheme.surfaceVariant
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text(label, fontSize = 11.sp)
@@ -159,7 +162,7 @@ private fun DecisionBar(label: String, value: Int, total: Int, color: Color) {
         }
         Canvas(Modifier.fillMaxWidth().height(9.dp)) {
             drawRoundRect(
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = trackColor,
                 size = size,
                 cornerRadius = CornerRadius(8f, 8f)
             )
