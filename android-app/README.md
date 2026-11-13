@@ -7,7 +7,7 @@ listas pessoais e painel local. Toda a inteligência do console web
 sem rede, sem telemetria, sem aleatoriedade (motor determinístico).
 
 - **Pacote:** `com.orangeshield.app`
-- **Versão:** 1.1.0 (versionCode 6) — linha de trabalho `work/v1.1-security-observatory`
+- **Versão:** 1.3.0 (versionCode 8) — linha de trabalho `work/v1.3-functional-dashboard`
 - **Stack:** Kotlin 2.2.0 · AGP 8.10.1 · Jetpack Compose (Material3) · Room 2.6.1 (KSP) · corrotinas
 - **SDK:** compileSdk/targetSdk 36 · minSdk 29 (Android 10+ — necessário para `CallScreeningService` + `RoleManager`)
 - **Idioma:** pt-BR em toda a UI
@@ -18,7 +18,7 @@ sem rede, sem telemetria, sem aleatoriedade (motor determinístico).
 
 A v1.1 mantém o `NotificationListenerService` para preservar o Guardião WhatsApp. O Google documenta que o Play Protect pode bloquear sideloads (download por navegador/mensageiro/gerenciador) quando um app declara `NOTIFICATION_LISTENER`. Portanto, não existe um ajuste de tela ou assinatura que garanta a instalação direta do APK mantendo esse recurso. O caminho suportado é distribuir pela Play Store (começando por teste interno/fechado) ou solicitar revisão/appeal ao Google após auditoria. Não oriente o usuário a desativar o Play Protect.
 
-A permissão `READ_CALL_LOG` foi removida porque o app não é o discador padrão e não precisa ler o registro do telefone: a triagem recebe os dados da chamada diretamente pelo `CallScreeningService`. `READ_PHONE_STATE` também foi removida por não haver uso no código atual. As funcionalidades existentes de triagem e WhatsApp permanecem.
+A partir da v1.2, `READ_CALL_LOG` é solicitada somente quando o usuário inicia explicitamente a varredura do Radar. O app lê e agrega registros localmente para sugerir números a revisar; não altera o histórico nativo nem bloqueia automaticamente candidatos. Essa permissão é restrita pelas políticas do Google Play e precisa ser declarada/revisada quando aplicável. `READ_PHONE_STATE` permanece removida por não haver uso no código atual.
 
 ## 1.1. Instalação do APK (sem Android Studio)
 
@@ -80,7 +80,7 @@ android-app/
       └─ java/com/orangeshield/app/
          ├─ EngineProvider.kt               # DI manual (sem Hilt): banco + motores + settings
          ├─ SettingsStore.kt                # EngineSettings persistido em SharedPreferences
-         ├─ data/                           # Room: entidades, DAOs, AppDatabase (v1)
+         ├─ data/                           # Room: entidades, DAOs, AppDatabase + migração (v2)
          ├─ engine/                         # PORTA DOS MOTORES DO CONSOLE WEB
          │  ├─ Normalize.kt                 # espelho de normalize.ts
          │  ├─ SpoofDetector.kt             # espelho de spoof.ts (pipeline de 4 passos)
@@ -93,7 +93,7 @@ android-app/
          ├─ whatsapp/WhatsAppGuardService.kt        # NotificationListenerService
          └─ ui/                             # Compose Material3 (tema laranja escuro)
             ├─ Theme.kt · MainActivity.kt
-            ├─ PainelScreen.kt · AnaliseScreen.kt · ObservatoryScreen.kt
+            ├─ PainelScreen.kt · IntelligenceScreen.kt · AnaliseScreen.kt · ObservatoryScreen.kt
             ├─ ListasScreen.kt · WhatsAppScreen.kt
 ```
 
