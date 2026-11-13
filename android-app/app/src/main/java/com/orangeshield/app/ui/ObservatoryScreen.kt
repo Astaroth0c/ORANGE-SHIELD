@@ -35,6 +35,11 @@ fun ObservatoryScreen() {
     val events by EngineProvider.database.callEventDao()
         .listRecent(500).collectAsStateWithLifecycle(initialValue = emptyList())
 
+    val formatAnomalies = candidates.mapNotNull { candidate ->
+        val flags = EngineProvider.spoofDetector.formatStepChecks(candidate.e164)
+            .filter { it.status == com.orangeshield.app.engine.SpoofStatus.FLAGGED }
+        if (flags.isEmpty()) null else candidate to flags
+    }
     val importedCalls = candidates.sumOf { it.totalCalls }
     val importedBlocked = candidates.sumOf { it.blockedCalls }
     val triagedBlocked = events.count { it.decision == "BLOCK" }
@@ -89,6 +94,24 @@ fun ObservatoryScreen() {
                         DecisionBar(formatPhone(candidate.e164), candidate.totalCalls, max, OrangePrimary)
                     }
                 }
+            }
+        }
+        item {
+            GlassCard {
+                Text("ANOMALIAS ESTRUTURAIS · RADAR", fontSize = 12.sp, color = OrangeSecondary, fontWeight = FontWeight.Bold)
+                MetricCard("Números com formato atípico", formatAnomalies.size.toString(), Modifier.fillMaxWidth())
+                if (formatAnomalies.isEmpty()) {
+                    EmptyChartMessage("Nenhuma anomalia estrutural foi identificada nos números importados.")
+                } else {
+                    formatAnomalies.take(8).forEach { (candidate, flags) ->
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(formatPhone(candidate.e164), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text(flags.joinToString(" · ") { it.label }, fontSize = 10.sp, color = AmberWarn)
+                        }
+                    }
+                }
+                Text("Esta seção mostra somente anomalias estruturais do Passo 1. Não confirma falsificação de caller ID nem substitui os demais passos do detector.",
+                    fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         item {
