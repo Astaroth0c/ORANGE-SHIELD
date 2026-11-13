@@ -83,4 +83,3 @@ jobs:
           name: ORANGE-SHIELD-v1.1.0-android
           path: dist/*
           if-no-files-found: error
-          if-no-files-found: error
