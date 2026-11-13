@@ -411,8 +411,15 @@ private fun OwnNumberCard() {
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        scope.launch {
-                            store.save(settings.copy(ownNumber = ownNumber))
+                        val normalized = com.orangeshield.app.engine.normalizePhone(ownNumber)
+                        if (normalized.isNotBlank()) {
+                            scope.launch {
+                                store.save(settings.copy(ownNumber = normalized))
+                                ownNumber = normalized
+                                Toast.makeText(context, "Número salvo.", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Toast.makeText(context, "Informe um número válido com DDD.", Toast.LENGTH_LONG).show()
                         }
                     }
                 )
