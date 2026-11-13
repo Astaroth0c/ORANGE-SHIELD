@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,6 +23,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -56,11 +58,14 @@ fun ListasScreen() {
         TabRow(selectedTabIndex = tab) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Bloqueados") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Permitidos") })
+            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Sugestões") })
         }
         if (tab == 0) {
             BlockedList()
-        } else {
+        } else if (tab == 1) {
             AllowedList()
+        } else {
+            HistorySuggestions()
         }
     }
 }
@@ -247,6 +252,66 @@ private fun ListRow(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = deleteDescription
                 )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun HistorySuggestions() {
+    val dao = EngineProvider.database.historyCandidateDao()
+    val phoneDao = EngineProvider.database.phoneListDao()
+    val scope = rememberCoroutineScope()
+    val candidates by dao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        contentPadding = PaddingValues(bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            Text("Sugestões da varredura", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "Números importados do histórico do aparelho. Nenhum deles é bloqueado automaticamente.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (candidates.isEmpty()) {
+            item { EmptyHint("Faça a varredura na aba Radar para preencher esta lista.") }
+        }
+        items(candidates, key = { it.e164 }) { item ->
+            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Text(formatPhone(item.e164), fontWeight = FontWeight.SemiBold)
+                    Text(item.suggestedLabel, color = OrangePrimary, fontSize = 12.sp)
+                    Text(
+                        "${item.totalCalls} chamadas · ${item.missedCalls} perdidas · ${item.blockedCalls} já marcadas como bloqueadas no aparelho",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    phoneDao.upsertBlocked(BlockedEntity(item.e164, item.suggestedLabel, System.currentTimeMillis()))
+                                    dao.markReviewed(item.e164)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Bloquear") }
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    phoneDao.upsertAllowed(AllowedEntity(item.e164, null, System.currentTimeMillis()))
+                                    dao.markReviewed(item.e164)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Permitir") }
+                    }
+                }
             }
         }
     }
