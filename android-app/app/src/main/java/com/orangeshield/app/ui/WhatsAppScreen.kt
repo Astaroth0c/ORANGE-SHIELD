@@ -12,15 +12,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +55,7 @@ import java.util.Locale
 @Composable
 fun WhatsAppScreen() {
     val context = LocalContext.current
+    var showDisclosure by remember { mutableStateOf(false) }
     val dao = EngineProvider.database.whatsappEventDao()
     val events by dao.listRecent(50).collectAsStateWithLifecycle(initialValue = emptyList())
 
@@ -100,18 +106,19 @@ fun WhatsAppScreen() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Button(
+                        onClick = { showDisclosure = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Revisar acesso e consentir")
+                    }
+                    TextButton(
                         onClick = {
-                            try {
-                                context.startActivity(
-                                    Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                                )
-                            } catch (_: Exception) {
-                                // Sem handler para as configurações de listener neste aparelho.
-                            }
+                            context.getSharedPreferences("orange_shield_privacy", android.content.Context.MODE_PRIVATE)
+                                .edit().putBoolean("whatsapp_notification_access_consent", false).apply()
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Abrir configurações de acesso")
+                        Text("Revogar consentimento de análise")
                     }
                     Text(
                         text = "Limitação: o WhatsApp não oferece API pública para bloqueio automático. O app classifica a mensagem, alerta e abre o chat em wa.me para o bloqueio manual.",
@@ -147,6 +154,34 @@ fun WhatsAppScreen() {
         item(key = "espaco-final") {
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+    if (showDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showDisclosure = false },
+            title = { Text("Acesso às notificações do WhatsApp") },
+            text = {
+                Text(
+                    "O ORANGE SHIELD precisa ler o título e o texto das notificações do WhatsApp e WhatsApp Business para identificar padrões de golpe. " +
+                    "A análise acontece no aparelho. O texto original da mensagem não será guardado; o histórico registra remetente, resultado, pontuação e motivo. " +
+                    "O app não envia essas notificações para servidores. Você pode cancelar agora ou revogar o consentimento depois."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    context.getSharedPreferences("orange_shield_privacy", android.content.Context.MODE_PRIVATE)
+                        .edit().putBoolean("whatsapp_notification_access_consent", true).apply()
+                    showDisclosure = false
+                    try {
+                        context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                    } catch (_: Exception) {
+                        // O acesso pode ser habilitado manualmente nas configurações do Android.
+                    }
+                }) { Text("Concordo e abrir configurações") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDisclosure = false }) { Text("Agora não") }
+            }
+        )
     }
 }
 
