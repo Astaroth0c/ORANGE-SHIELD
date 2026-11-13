@@ -71,6 +71,11 @@ fun PainelScreen() {
     val blocked by dao.countByDecision("BLOCK").collectAsStateWithLifecycle(initialValue = 0)
     val warned by dao.countByDecision("WARN").collectAsStateWithLifecycle(initialValue = 0)
     val spoofFlagged by dao.countByCategory("spoofing").collectAsStateWithLifecycle(initialValue = 0)
+    val historyDao = EngineProvider.database.historyCandidateDao()
+    val historyCandidates by historyDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val historyCalls = historyCandidates.sumOf { it.totalCalls }
+    val historyNumbers = historyCandidates.size
+    val historyBlocked = historyCandidates.sumOf { it.blockedCalls }
 
     // Recalcula os status de permissão quando a tela volta ao primeiro plano.
     var resumeTick by remember { mutableIntStateOf(0) }
@@ -190,7 +195,27 @@ fun PainelScreen() {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard(label = "Alertadas", value = warned.toString(), modifier = Modifier.weight(1f))
-            StatCard(label = "Com spoofing", value = spoofFlagged.toString(), modifier = Modifier.weight(1f))
+            StatCard(label = "Flags em triagens", value = spoofFlagged.toString(), modifier = Modifier.weight(1f))
+        }
+
+        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("INTELIGÊNCIA IMPORTADA DO RADAR", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("Dados reais do histórico do aparelho", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatCard(label = "Chamadas lidas", value = historyCalls.toString(), modifier = Modifier.weight(1f))
+                    StatCard(label = "Números", value = historyNumbers.toString(), modifier = Modifier.weight(1f))
+                    StatCard(label = "Marcadas bloqueadas", value = historyBlocked.toString(), modifier = Modifier.weight(1f))
+                }
+                Text(
+                    "As triagens acima contam chamadas processadas pelo ORANGE SHIELD. Estes indicadores mostram separadamente o histórico importado pelo Radar; registros nativos de bloqueio variam conforme o fabricante.",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         // ---- Configuração do aparelho ----
@@ -378,6 +403,33 @@ private fun OwnNumberCard() {
                     }
                 )
             )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = {
+                        val normalized = com.orangeshield.app.engine.normalizePhone(ownNumber)
+                        if (normalized.isBlank()) {
+                            Toast.makeText(context, "Informe um número válido com DDD.", Toast.LENGTH_LONG).show()
+                        } else {
+                            scope.launch {
+                                store.save(settings.copy(ownNumber = normalized))
+                                ownNumber = normalized
+                                Toast.makeText(context, "Número salvo. A comparação de vizinhança será usada nas próximas análises.", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) { Text("Salvar número") }
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            store.save(settings.copy(ownNumber = ""))
+                            ownNumber = ""
+                            Toast.makeText(context, "Número removido da análise de vizinhança.", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) { Text("Desativar") }
+            }
         }
     }
 }
