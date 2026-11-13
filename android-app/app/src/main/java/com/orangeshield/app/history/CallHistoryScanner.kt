@@ -55,8 +55,13 @@ class CallHistoryScanner(
         context.contentResolver.query(
             uri,
             projection,
-            null,
-            null,
+            "${CallLog.Calls.TYPE} IN (?, ?, ?, ?)",
+            arrayOf(
+                CallLog.Calls.INCOMING_TYPE.toString(),
+                CallLog.Calls.MISSED_TYPE.toString(),
+                CallLog.Calls.REJECTED_TYPE.toString(),
+                CallLog.Calls.BLOCKED_TYPE.toString()
+            ),
             "${CallLog.Calls.DATE} DESC"
         )?.use { cursor ->
             val numberIndex = cursor.getColumnIndex(CallLog.Calls.NUMBER)
