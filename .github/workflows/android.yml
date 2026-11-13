@@ -48,37 +48,39 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug assembleRelease bundleRelease --no-daemon --console=plain
 
-      - name: Generate package checksums
-        shell: bash
+      - name: Stage Android packages
         run: |
           set -euo pipefail
+          mkdir -p dist
 
-          DEBUG_APK="android-app/app/build/outputs/apk/debug/app-debug.apk"
-          RELEASE_DIR="android-app/app/build/outputs/apk/release"
-          BUNDLE_AAB="android-app/app/build/outputs/bundle/release/app-release.aab"
+          DEBUG_APK="$(find android-app/app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          RELEASE_APK="$(find android-app/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          RELEASE_AAB="$(find android-app/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' -print -quit)"
 
-          test -f "$DEBUG_APK"
-          test -f "$BUNDLE_AAB"
+          test -n "$DEBUG_APK" && test -f "$DEBUG_APK"
+          test -n "$RELEASE_APK" && test -f "$RELEASE_APK"
+          test -n "$RELEASE_AAB" && test -f "$RELEASE_AAB"
 
-          RELEASE_APK="$(find "$RELEASE_DIR" -maxdepth 1 -type f -name '*.apk' -print -quit)"
-          if [ -z "$RELEASE_APK" ]; then
-            echo "::error::Nenhum APK de release foi encontrado em $RELEASE_DIR"
-            find "$RELEASE_DIR" -maxdepth 2 -type f -print || true
-            exit 1
+          cp "$DEBUG_APK" dist/ORANGE-SHIELD-v1.1.0-debug.apk
+          if [[ "$(basename "$RELEASE_APK")" == *-unsigned.apk ]]; then
+            cp "$RELEASE_APK" dist/ORANGE-SHIELD-v1.1.0-release-unsigned.apk
+            echo "Release APK: unsigned (no private signing key configured)." > dist/BUILD-NOTES.txt
+          else
+            cp "$RELEASE_APK" dist/ORANGE-SHIELD-v1.1.0-release.apk
+            echo "Release APK: signed by the configured release signing key." > dist/BUILD-NOTES.txt
           fi
+          cp "$RELEASE_AAB" dist/ORANGE-SHIELD-v1.1.0-release.aab
 
-          echo "APKs encontrados:"
-          ls -lh "$DEBUG_APK" "$RELEASE_APK" "$BUNDLE_AAB"
-          sha256sum "$DEBUG_APK" "$RELEASE_APK" "$BUNDLE_AAB" > SHA256SUMS.txt
-          cat SHA256SUMS.txt
+      - name: Generate package checksums
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum *.apk *.aab > SHA256SUMS.txt
 
       - name: Upload Android test and release artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ORANGE-SHIELD-v1.1.0-android
-          path: |
-            android-app/app/build/outputs/apk/debug/
-            android-app/app/build/outputs/apk/release/
-            android-app/app/build/outputs/bundle/release/
-            SHA256SUMS.txt
+          path: dist/*
+          if-no-files-found: error
           if-no-files-found: error
