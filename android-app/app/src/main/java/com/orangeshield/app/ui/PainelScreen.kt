@@ -76,6 +76,14 @@ fun PainelScreen() {
     val historyCalls = historyCandidates.sumOf { it.totalCalls }
     val historyNumbers = historyCandidates.size
     val historyBlocked = historyCandidates.sumOf { it.blockedCalls }
+    val historyReview = historyCandidates.count {
+        it.totalCalls >= 4 || it.blockedCalls > 0 || it.e164.startsWith("+550303")
+    }
+    val historyFormatFlags = historyCandidates.count { candidate ->
+        EngineProvider.spoofDetector.formatStepChecks(candidate.e164).any {
+            it.status == com.orangeshield.app.engine.SpoofStatus.FLAGGED
+        }
+    }
 
     // Recalcula os status de permissão quando a tela volta ao primeiro plano.
     var resumeTick by remember { mutableIntStateOf(0) }
@@ -195,7 +203,12 @@ fun PainelScreen() {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard(label = "Alertadas", value = warned.toString(), modifier = Modifier.weight(1f))
-            StatCard(label = "Flags em triagens", value = spoofFlagged.toString(), modifier = Modifier.weight(1f))
+            StatCard(label = "Spoofing em triagens", value = spoofFlagged.toString(), modifier = Modifier.weight(1f))
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatCard(label = "Sinais para revisar", value = historyReview.toString(), modifier = Modifier.weight(1f))
+            StatCard(label = "Anomalias de formato", value = historyFormatFlags.toString(), modifier = Modifier.weight(1f))
         }
 
         ElevatedCard(modifier = Modifier.fillMaxWidth()) {
