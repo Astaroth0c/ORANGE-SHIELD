@@ -120,8 +120,8 @@ fun ObservatoryScreen() {
             GlassCard {
                 Text("INTEGRIDADE E ORIGEM", fontSize = 12.sp, color = OrangeSecondary, fontWeight = FontWeight.Bold)
                 Text(
-                    "Histórico nativo: $importedCalls registros agregados em \${candidates.size} números. " +
-                        "Triagens do app: \${events.size} decisões registradas separadamente. Os dois conjuntos não são misturados.",
+                    "Histórico nativo: $importedCalls registros agregados em ${candidates.size} números. " +
+                        "Triagens do app: ${events.size} decisões registradas separadamente. Os dois conjuntos não são misturados.",
                     fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
