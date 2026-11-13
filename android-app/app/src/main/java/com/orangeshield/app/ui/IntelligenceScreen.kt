@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
@@ -28,11 +29,13 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -58,6 +61,19 @@ fun IntelligenceScreen() {
     val dao = EngineProvider.database.historyCandidateDao()
     val candidates by dao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val scope = rememberCoroutineScope()
+    var search by remember { mutableStateOf("") }
+    var page by remember { mutableIntStateOf(0) }
+    val pageSize = 20
+    val filteredCandidates = remember(candidates, search) {
+        if (search.isBlank()) candidates else candidates.filter {
+            it.e164.contains(search.filter { ch -> ch.isDigit() }) ||
+                it.suggestedLabel.contains(search, ignoreCase = true)
+        }
+    }
+    val pageCount = ((filteredCandidates.size + pageSize - 1) / pageSize).coerceAtLeast(1)
+    val safePage = page.coerceIn(0, pageCount - 1)
+    val pageCandidates = filteredCandidates.drop(safePage * pageSize).take(pageSize)
+    val listState = rememberLazyListState()
     var disclosure by remember { mutableStateOf(false) }
     var scanning by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf("Aguardando autorização para a primeira varredura.") }
@@ -103,6 +119,7 @@ fun IntelligenceScreen() {
     }
 
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -188,6 +205,31 @@ fun IntelligenceScreen() {
         item {
             Text("MAPA DE RECORRÊNCIA", color = OrangeSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             Text("Candidatos encontrados no aparelho", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it; page = 0 },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Buscar número ou classificação") }
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("${filteredCandidates.size} resultados · página ${safePage + 1}/${pageCount}",
+                    color = MutedOnDark, fontSize = 11.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(
+                        onClick = { page = 0; scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage > 0
+                    ) { Text("Início") }
+                    OutlinedButton(
+                        onClick = { page = pageCount - 1; scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage < pageCount - 1
+                    ) { Text("Final") }
+                }
+            }
         }
         if (candidates.isEmpty()) {
             item {
@@ -196,7 +238,7 @@ fun IntelligenceScreen() {
                 }
             }
         } else {
-            items(candidates.take(80), key = { it.e164 }) { item ->
+            items(pageCandidates, key = { it.e164 }) { item ->
                 Card(colors = CardDefaults.cardColors(containerColor = DarkSurface)) {
                     Row(
                         Modifier.fillMaxWidth().padding(14.dp),
@@ -217,6 +259,21 @@ fun IntelligenceScreen() {
                             color = if (item.totalCalls >= 8) OrangePrimary else MutedOnDark,
                             fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     }
+                }
+            }
+        }
+        if (filteredCandidates.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(onClick = { page = (safePage - 1).coerceAtLeast(0); scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage > 0) { Text("Anterior") }
+                    Text("${safePage + 1} / ${pageCount}", color = MutedOnDark, fontSize = 11.sp)
+                    Button(onClick = { page = (safePage + 1).coerceAtMost(pageCount - 1); scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage < pageCount - 1) { Text("Próxima") }
                 }
             }
         }
