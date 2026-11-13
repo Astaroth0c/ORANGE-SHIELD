@@ -101,6 +101,8 @@ android-app/
 
 ### Decisões de engenharia
 
+- **Permissão de triagem:** o serviço exige exatamente `android.permission.BIND_SCREENING_SERVICE`, conforme `Manifest.permission.BIND_SCREENING_SERVICE` do Android. Não use `android.telecom.permission...`.
+
 - **Privacidade local:** o manifesto remove permissões de leitura do histórico de chamadas, estado do telefone, inicialização automática e internet que não eram utilizadas. `allowBackup=false` evita incluir histórico e configurações em backups automáticos do Android.
 - **Sem Hilt:** `EngineProvider` (object) entrega banco/motores/configurações; os
   serviços chamam `EngineProvider.init(this)` no `onCreate`.
