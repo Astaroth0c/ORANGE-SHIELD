@@ -1,5 +1,7 @@
 name: Android APK
 
+# Triggered after configuring the permanent ORANGE-SHIELD release signing secrets.
+
 concurrency:
   group: android-${{ github.ref }}
   cancel-in-progress: true
