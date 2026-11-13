@@ -56,7 +56,7 @@ import java.text.DateFormat
 import java.util.Date
 
 @Composable
-fun IntelligenceScreen() {
+fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
     val context = LocalContext.current
     val dao = EngineProvider.database.historyCandidateDao()
     val candidates by dao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
@@ -256,9 +256,12 @@ fun IntelligenceScreen() {
                             Text("Última ocorrência: ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(item.lastSeenAt))}",
                                 color = MutedOnDark, fontSize = 10.sp)
                         }
-                        Text(if (item.totalCalls >= 8) "ALTA\nRECORRÊNCIA" else "HISTÓRICO",
-                            color = if (item.totalCalls >= 8) OrangePrimary else MutedOnDark,
-                            fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(if (item.totalCalls >= 8) "ALTA\nRECORRÊNCIA" else "HISTÓRICO",
+                                color = if (item.totalCalls >= 8) OrangePrimary else MutedOnDark,
+                                fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            OutlinedButton(onClick = { onAnalyzeNumber(item.e164) }) { Text("Analisar") }
+                        }
                     }
                 }
             }
