@@ -88,7 +88,7 @@ fun OrangeShieldApp() {
     val store = EngineProvider.settingsStore
     val settings by store.state.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route ?: "painel"
+    val currentRoute = backStackEntry?.destination?.route?.substringBefore("?") ?: "painel"
 
     // Versão do app lida do PackageManager (sem texto fixo no código).
     val context = LocalContext.current
