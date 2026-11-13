@@ -22,13 +22,14 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Prepare private release signing key
-        if: ${{ secrets.ORANGE_SIGNING_STORE_BASE64 != '' }}
+      - name: Prepare private release signing key (when configured)
         env:
           STORE_BASE64: ${{ secrets.ORANGE_SIGNING_STORE_BASE64 }}
         run: |
-          echo "$STORE_BASE64" | base64 --decode > "$RUNNER_TEMP/orange-shield-upload.jks"
-          chmod 600 "$RUNNER_TEMP/orange-shield-upload.jks"
+          if [ -n "$STORE_BASE64" ]; then
+            echo "$STORE_BASE64" | base64 --decode > "$RUNNER_TEMP/orange-shield-upload.jks"
+            chmod 600 "$RUNNER_TEMP/orange-shield-upload.jks"
+          fi
 
       - name: Build release APK
         working-directory: android-app
