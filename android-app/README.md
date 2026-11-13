@@ -8,8 +8,8 @@ sem rede, sem telemetria, sem aleatoriedade (motor determinístico).
 
 - **Pacote:** `com.orangeshield.app`
 - **Versão:** 1.1.0 (versionCode 6) — linha de trabalho `work/v1.1-security-observatory`
-- **Stack:** Kotlin 2.0.20 · AGP 8.5.2 · Jetpack Compose (Material3) · Room 2.6.1 (KSP) · corrotinas
-- **SDK:** compileSdk/targetSdk 34 · minSdk 29 (Android 10+ — necessário para `CallScreeningService` + `RoleManager`)
+- **Stack:** Kotlin 2.1.20 · AGP 8.10.1 · Jetpack Compose (Material3) · Room 2.6.1 (KSP) · corrotinas
+- **SDK:** compileSdk/targetSdk 36 · minSdk 29 (Android 10+ — necessário para `CallScreeningService` + `RoleManager`)
 - **Idioma:** pt-BR em toda a UI
 
 ---
@@ -39,7 +39,7 @@ A permissão `READ_CALL_LOG` foi removida porque o app não é o discador padrã
 | Ferramenta | Versão recomendada |
 |---|---|
 | JDK | 17 |
-| Android SDK | platform 34 + build-tools 34.0.0 |
+| Android SDK | platform 36 + build-tools 36.0.0 |
 | Gradle | 8.7 (via wrapper versionado no repo) |
 
 ## 3. Como buildar
