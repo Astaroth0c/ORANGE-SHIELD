@@ -13,26 +13,36 @@ android {
         applicationId = "com.orangeshield.app"
         minSdk = 29
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.0.0"
+        versionCode = 6
+        versionName = "1.1.0"
     }
 
-    signingConfigs {
-        create("release") {
-            // Chave de assinatura do projeto (commitada de propósito: projeto
-            // pessoal — permite rebuilds e atualizações instaláveis por cima.
-            // Troque por uma chave privada sua antes de publicar em loja.
-            storeFile = file("../orangeshield-release.keystore")
-            storePassword = "OrangeShield2024!"
-            keyAlias = "orangeshield"
-            keyPassword = "OrangeShield2024!"
+    // Release signing is injected only by the build environment.
+    // Never commit keystores or passwords to the repository.
+    val signingStoreFile = providers.environmentVariable("ORANGE_SIGNING_STORE_FILE").orNull
+    val signingStorePassword = providers.environmentVariable("ORANGE_SIGNING_STORE_PASSWORD").orNull
+    val signingKeyAlias = providers.environmentVariable("ORANGE_SIGNING_KEY_ALIAS").orNull
+    val signingKeyPassword = providers.environmentVariable("ORANGE_SIGNING_KEY_PASSWORD").orNull
+
+    if (!signingStoreFile.isNullOrBlank() &&
+        !signingStorePassword.isNullOrBlank() &&
+        !signingKeyAlias.isNullOrBlank() &&
+        !signingKeyPassword.isNullOrBlank()
+    ) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(signingStoreFile)
+                storePassword = signingStorePassword
+                keyAlias = signingKeyAlias
+                keyPassword = signingKeyPassword
+            }
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            if (!signingStoreFile.isNullOrBlank() && !signingStorePassword.isNullOrBlank() && !signingKeyAlias.isNullOrBlank() && !signingKeyPassword.isNullOrBlank()) {\n                signingConfig = signingConfigs.getByName("release")\n            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
