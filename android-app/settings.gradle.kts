@@ -2,7 +2,10 @@
 pluginManagement {
     repositories {
         google()
-        mavenCentral()
+        // Maven Central pelo endpoint canônico (repo1) — repo.maven.apache.org
+        // responde 429 em IPs compartilhados. Aliyun como espelho de reserva.
+        maven("https://repo1.maven.org/maven2")
+        maven("https://maven.aliyun.com/repository/public")
         gradlePluginPortal()
     }
 }
@@ -10,7 +13,8 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         google()
-        mavenCentral()
+        maven("https://repo1.maven.org/maven2")
+        maven("https://maven.aliyun.com/repository/public")
     }
 }
 

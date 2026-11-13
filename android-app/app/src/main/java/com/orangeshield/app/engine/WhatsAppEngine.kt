@@ -91,7 +91,7 @@ class WhatsAppEngine(
         // (a) Phishing do código de verificação (sequestro de conta)
         // ------------------------------------------------------------------
         if (settings.waBlockCodePhish && lower.contains("código") && SIX_DIGITS_RE.containsMatchIn(lower)) {
-            add("Phishing de código de verificação (sequestro de conta)", WhatsAppWeights.CODE_PHISHING)
+            add("Phishing de código de verificação (sequestro de conta)", CODE_PHISHING)
             category = "phishing_code"
         }
 
@@ -101,7 +101,7 @@ class WhatsAppEngine(
         val fakeRelative = (lower.contains("troquei") || lower.contains("novo número")) &&
             (lower.contains("pix") || lower.contains("transferi"))
         if (fakeRelative) {
-            add("Falso parente: novo número pedindo PIX/transferência", WhatsAppWeights.FAKE_RELATIVE)
+            add("Falso parente: novo número pedindo PIX/transferência", FAKE_RELATIVE)
             category = "fraud"
         }
 
@@ -111,7 +111,7 @@ class WhatsAppEngine(
         val hasSuspiciousLink = SUSPICIOUS_LINKS.any { lower.contains(it) }
         val callToAction = CALL_TO_ACTION.any { lower.contains(it) }
         if (settings.waBlockLinks && hasSuspiciousLink && callToAction) {
-            add("Link suspeito com chamada para ação (clique/cadastre/acesse)", WhatsAppWeights.SUSPICIOUS_LINK)
+            add("Link suspeito com chamada para ação (clique/cadastre/acesse)", SUSPICIOUS_LINK)
             if (category == "unknown") category = "suspicious_link"
         }
 
@@ -121,7 +121,7 @@ class WhatsAppEngine(
         val prize = listOf("ganhou", "prêmio", "sorteio").any { lower.contains(it) }
         val prizeCallToAction = listOf("clique", "cadastre").any { lower.contains(it) }
         if (prize && prizeCallToAction) {
-            add("Promessa de prêmio/sorteio pedindo cadastro", WhatsAppWeights.PRIZE_SCAM)
+            add("Promessa de prêmio/sorteio pedindo cadastro", PRIZE_SCAM)
             if (category == "unknown") category = "prize_scam"
         }
 
@@ -129,7 +129,7 @@ class WhatsAppEngine(
         // (e) Disparo encaminhado em massa
         // ------------------------------------------------------------------
         if (settings.waBlockForwarded && forwardedMany) {
-            add("Mensagem encaminhada muitas vezes (disparo em cadeia)", WhatsAppWeights.FORWARDED_CHAIN)
+            add("Mensagem encaminhada muitas vezes (disparo em cadeia)", FORWARDED_CHAIN)
             if (category == "unknown") category = "forwarded_chain"
         }
 
@@ -137,7 +137,7 @@ class WhatsAppEngine(
         // (f) Pressão urgente para PIX
         // ------------------------------------------------------------------
         if (lower.contains("pix") && (lower.contains("urgente") || lower.contains("prazo"))) {
-            add("Pressão urgente para pagamento via PIX", WhatsAppWeights.PIX_PRESSURE)
+            add("Pressão urgente para pagamento via PIX", PIX_PRESSURE)
             if (category == "unknown") category = "pix_pressure"
         }
 

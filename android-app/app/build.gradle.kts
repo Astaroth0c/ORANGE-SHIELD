@@ -13,8 +13,8 @@ android {
         applicationId = "com.orangeshield.app"
         minSdk = 29
         targetSdk = 34
-        versionCode = 3
-        versionName = "0.9.0"
+        versionCode = 4
+        versionName = "0.9.1"
     }
 
     buildTypes {

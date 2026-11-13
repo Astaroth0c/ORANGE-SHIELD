@@ -179,7 +179,7 @@ class CallRuleEngine(
         // Prefixo 0303 da Anatel (telemarketing)
         if (e164.startsWith("+550303")) {
             if (settings.blockTelemarketing) {
-                add("Prefixo 0303 — telemarketing (Anatel)", CallWeights.PREFIX_0303)
+                add("Prefixo 0303 — telemarketing (Anatel)", PREFIX_0303)
                 category = "telemarketing"
             } else {
                 steps += EngineStep("Prefixo 0303", "Detectado, mas regra desativada")
@@ -190,19 +190,19 @@ class CallRuleEngine(
         if (reputation != null) {
             when (reputation.classification) {
                 "telemarketing" -> if (settings.blockTelemarketing) {
-                    add("Classificado como telemarketing", CallWeights.TELEMARKETING)
+                    add("Classificado como telemarketing", TELEMARKETING)
                     category = "telemarketing"
                 }
                 "robocall" -> if (settings.blockRobocalls) {
-                    add("Associado a robocall (disparo automático)", CallWeights.ROBOCALL)
+                    add("Associado a robocall (disparo automático)", ROBOCALL)
                     category = "robocall"
                 }
                 "collector" -> if (settings.blockCollectors) {
-                    add("Cobrança automatizada", CallWeights.COLLECTOR)
+                    add("Cobrança automatizada", COLLECTOR)
                     category = "collector"
                 }
                 "verified_business" -> {
-                    add("Número comercial verificado", CallWeights.VERIFIED_BUSINESS)
+                    add("Número comercial verificado", VERIFIED_BUSINESS)
                     category = "verified_business"
                 }
             }
@@ -210,8 +210,8 @@ class CallRuleEngine(
             // Denúncias consistentes (ponderadas pela confiança, teto de 60)
             if (reputation.reportCount > 0) {
                 val complaint = minOf(
-                    CallWeights.COMPLAINT_MAX,
-                    CallWeights.COMPLAINT_BASE + (reputation.reportCount - 1) * CallWeights.COMPLAINT_STEP
+                    COMPLAINT_MAX,
+                    COMPLAINT_BASE + (reputation.reportCount - 1) * COMPLAINT_STEP
                 )
                 val confidence = if (reputation.confidence > 0.0) reputation.confidence else 0.5
                 val weighted = (complaint * confidence).roundToInt()
@@ -226,7 +226,7 @@ class CallRuleEngine(
         // Internacional
         if (international) {
             if (settings.blockInternational) {
-                add("Chamada internacional bloqueável", CallWeights.INTERNATIONAL)
+                add("Chamada internacional bloqueável", INTERNATIONAL)
                 category = "international"
             } else {
                 steps += EngineStep("Chamada internacional", "Detectada (regra desativada)")
@@ -236,7 +236,7 @@ class CallRuleEngine(
         // Shortcode de operadora
         val shortcode = Regex("^\\+55\\d{1,6}$").matchEntire(e164) != null
         if (shortcode) {
-            add("Remetente/curto comercial (centrais automáticas)", CallWeights.SHORTCODE)
+            add("Remetente/curto comercial (centrais automáticas)", SHORTCODE)
         }
 
         // Proteção contra insistência — chamadas repetidas na última hora
@@ -244,16 +244,16 @@ class CallRuleEngine(
             val oneHourAgo = System.currentTimeMillis() - 60L * 60L * 1000L
             val recent = db.callEventDao().countInWindow(e164, oneHourAgo)
             if (recent >= INSISTENCE_HEAVY_COUNT) {
-                add("Insistência: $recent chamadas na última hora", CallWeights.INSISTENCE_HEAVY)
+                add("Insistência: $recent chamadas na última hora", INSISTENCE_HEAVY)
             } else if (recent >= INSISTENCE_LIGHT_COUNT) {
-                add("Insistência: $recent chamadas na última hora", CallWeights.INSISTENCE_LIGHT)
+                add("Insistência: $recent chamadas na última hora", INSISTENCE_LIGHT)
             }
         }
 
         // Política de número desconhecido (sem registro de reputação local)
         val unknown = reputation == null
         if (unknown && settings.blockUnknownNumbers) {
-            add("Política: bloquear números desconhecidos", CallWeights.UNKNOWN_NUMBER)
+            add("Política: bloquear números desconhecidos", UNKNOWN_NUMBER)
             category = "unknown"
         }
 
