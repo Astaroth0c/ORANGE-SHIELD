@@ -107,10 +107,20 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "A denúncia já foi moderada" }, { status: 409 });
   }
 
-  const report = await db.report.update({
-    where: { id },
+  // updateMany com status=pending torna a transição atômica: duas requisições
+  // simultâneas não conseguem aplicar duas vezes a mesma denúncia.
+  const changed = await db.report.updateMany({
+    where: { id, status: "pending" },
     data: { status },
   });
+  if (changed.count !== 1) {
+    return NextResponse.json({ error: "A denúncia já foi moderada" }, { status: 409 });
+  }
+
+  const report = await db.report.findUnique({ where: { id } });
+  if (!report) {
+    return NextResponse.json({ error: "Denúncia não encontrada" }, { status: 404 });
+  }
 
   if (status === "approved" && report.phoneNumberId) {
     await applyApprovedReport(report.e164, report.phoneNumberId, report.category);
