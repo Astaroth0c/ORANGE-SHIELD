@@ -49,20 +49,36 @@ jobs:
           ./gradlew assembleDebug assembleRelease bundleRelease --no-daemon --console=plain
 
       - name: Generate package checksums
+        shell: bash
         run: |
-          sha256sum \
-            android-app/app/build/outputs/apk/debug/app-debug.apk \
-            android-app/app/build/outputs/apk/release/app-release.apk \
-            android-app/app/build/outputs/bundle/release/app-release.aab \
-            > SHA256SUMS.txt
+          set -euo pipefail
+
+          DEBUG_APK="android-app/app/build/outputs/apk/debug/app-debug.apk"
+          RELEASE_DIR="android-app/app/build/outputs/apk/release"
+          BUNDLE_AAB="android-app/app/build/outputs/bundle/release/app-release.aab"
+
+          test -f "$DEBUG_APK"
+          test -f "$BUNDLE_AAB"
+
+          RELEASE_APK="$(find "$RELEASE_DIR" -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          if [ -z "$RELEASE_APK" ]; then
+            echo "::error::Nenhum APK de release foi encontrado em $RELEASE_DIR"
+            find "$RELEASE_DIR" -maxdepth 2 -type f -print || true
+            exit 1
+          fi
+
+          echo "APKs encontrados:"
+          ls -lh "$DEBUG_APK" "$RELEASE_APK" "$BUNDLE_AAB"
+          sha256sum "$DEBUG_APK" "$RELEASE_APK" "$BUNDLE_AAB" > SHA256SUMS.txt
+          cat SHA256SUMS.txt
 
       - name: Upload Android test and release artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ORANGE-SHIELD-v1.1.0-android
           path: |
-            android-app/app/build/outputs/apk/debug/app-debug.apk
-            android-app/app/build/outputs/apk/release/app-release.apk
-            android-app/app/build/outputs/bundle/release/app-release.aab
+            android-app/app/build/outputs/apk/debug/
+            android-app/app/build/outputs/apk/release/
+            android-app/app/build/outputs/bundle/release/
             SHA256SUMS.txt
           if-no-files-found: error
