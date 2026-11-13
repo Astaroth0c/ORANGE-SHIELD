@@ -8,7 +8,7 @@ Quando o usuário aceita o papel Android de triagem de chamadas, o sistema entre
 O ORANGE SHIELD não solicita acesso ao histórico telefônico (READ_CALL_LOG) e não declara READ_PHONE_STATE na versão 1.1.
 
 ### Guardião WhatsApp
-Somente depois de uma explicação em destaque, consentimento afirmativo no app e habilitação manual do Acesso a notificações nas configurações do Android, o serviço observa notificações publicadas pelos pacotes oficiais do WhatsApp e WhatsApp Business. O título e o texto da notificação são analisados em memória para detectar padrões de golpe. O texto original não é persistido. O histórico local guarda remetente, classificação, pontuação, motivo e horário.
+Somente depois de uma explicação em destaque, consentimento afirmativo no app e habilitação manual do Acesso a notificações nas configurações do Android, o serviço observa notificações publicadas pelos pacotes oficiais do WhatsApp e WhatsApp Business. O título e o texto da notificação são analisados em memória para detectar padrões de golpe. O texto original não é persistido. O histórico local guarda remetente, fingerprint SHA-256 do texto, classificação, pontuação, motivo e horário.
 
 O app não controla nem bloqueia diretamente mensagens dentro do WhatsApp. A ação de bloqueio é sempre manual no aplicativo WhatsApp.
 
