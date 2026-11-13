@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 
 /**
  * ORANGE SHIELD · GUARDIÃO WHATSAPP
@@ -71,16 +72,19 @@ class WhatsAppGuardService : NotificationListenerService() {
 
                 val dao = EngineProvider.database.whatsappEventDao()
                 val now = System.currentTimeMillis()
+                val fingerprint = MessageDigest.getInstance("SHA-256")
+                    .digest(text.toByteArray(Charsets.UTF_8))
+                    .joinToString("") { "%02x".format(it) }
 
-                // Evita duplicar o evento quando o WhatsApp republica/atualiza a notificação.
-                if (dao.countRecent(analysis.sender, now - DUPLICATE_WINDOW_MS) > 0) {
+                // Deduplica republicações sem guardar o conteúdo original.
+                if (dao.countRecent(analysis.sender, fingerprint, now - DUPLICATE_WINDOW_MS) > 0) {
                     return@launch
                 }
 
                 dao.insert(
                     WhatsAppEventEntity(
                         sender = analysis.sender,
-                        content = STORED_CONTENT_NOTICE,
+                        content = "SHA-256:$fingerprint",
                         decision = analysis.decision.name,
                         riskScore = analysis.riskScore,
                         category = analysis.category,
@@ -134,6 +138,5 @@ class WhatsAppGuardService : NotificationListenerService() {
         const val FORWARDED_MARKER = "encaminhada muitas vezes"
         const val PRIVACY_PREFS = "orange_shield_privacy"
         const val KEY_WHATSAPP_CONSENT = "whatsapp_notification_access_consent"
-        const val STORED_CONTENT_NOTICE = "Conteúdo analisado localmente; texto original não armazenado."
     }
 }
