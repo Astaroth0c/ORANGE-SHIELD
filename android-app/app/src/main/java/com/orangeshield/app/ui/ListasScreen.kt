@@ -413,9 +413,9 @@ private fun NativeBlockedHistory() {
             ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(formatPhone(item.e164), fontWeight = FontWeight.SemiBold)
-                    Text("\${item.blockedCalls} registro(s) marcado(s) como bloqueado(s)",
+                    Text("${item.blockedCalls} registro(s) marcado(s) como bloqueado(s)",
                         fontSize = 11.sp, color = OrangePrimary)
-                    Text("Total no histórico: \${item.totalCalls} chamada(s)",
+                    Text("Total no histórico: ${item.totalCalls} chamada(s)",
                         fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
