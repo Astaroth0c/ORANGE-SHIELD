@@ -21,7 +21,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         WhatsAppEventEntity::class,
         HistoryCandidateEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -44,6 +44,13 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+private val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE call_events ADD COLUMN rawNumber TEXT NOT NULL DEFAULT ''")
+        database.execSQL("ALTER TABLE history_candidates ADD COLUMN rawExamples TEXT NOT NULL DEFAULT ''")
+    }
+}
+
 object DatabaseProvider {
 
     @Volatile
@@ -55,6 +62,6 @@ object DatabaseProvider {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "orange_shield.db"
-            ).addMigrations(MIGRATION_1_2).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
         }
 }
