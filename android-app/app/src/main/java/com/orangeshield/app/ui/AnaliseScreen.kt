@@ -55,6 +55,7 @@ import com.orangeshield.app.engine.SpoofCheck
 import com.orangeshield.app.engine.SpoofStatus
 import com.orangeshield.app.engine.SpoofStepResult
 import com.orangeshield.app.engine.riskBand
+import com.orangeshield.app.engine.normalizePhoneDetailed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -130,7 +131,11 @@ fun AnaliseScreen(initialNumber: String = "") {
                             )
                         }
                         val spoofAnalysis = withContext(Dispatchers.Default) {
-                            EngineProvider.spoofDetector.analyzeSpoofing(analysis.e164, settings.ownNumber)
+                            if (normalizePhoneDetailed(number).isValid) {
+                                EngineProvider.spoofDetector.analyzeSpoofing(analysis.e164, settings.ownNumber)
+                            } else {
+                                null
+                            }
                         }
                         result = analysis
                         spoof = spoofAnalysis
