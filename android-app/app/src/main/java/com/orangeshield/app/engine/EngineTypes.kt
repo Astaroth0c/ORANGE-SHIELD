@@ -40,7 +40,9 @@ data class CallAnalysis(
     val evidences: List<EngineEvidence>,
     val steps: List<EngineStep>,
     val reason: String,
-    val ruleVersion: String
+    val ruleVersion: String,
+    val phoneNormalization: PhoneNormalization? = null,
+    val callerVerificationStatus: String? = null
 )
 
 /**
