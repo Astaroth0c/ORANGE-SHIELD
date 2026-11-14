@@ -25,8 +25,6 @@ import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -138,10 +136,7 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
             }
         }
         item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()) {
@@ -234,13 +229,13 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
         }
         if (candidates.isEmpty()) {
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = DarkSurface)) {
+                OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                     Text("Nenhum dado importado ainda. Autorize a varredura para construir seu mapa inicial.", modifier = Modifier.padding(16.dp), color = MutedOnDark)
                 }
             }
         } else {
             items(pageCandidates, key = { it.e164 }) { item ->
-                Card(colors = CardDefaults.cardColors(containerColor = DarkSurface)) {
+                OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         Modifier.fillMaxWidth().padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
