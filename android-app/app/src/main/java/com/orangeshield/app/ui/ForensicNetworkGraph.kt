@@ -152,3 +152,36 @@ private fun LegendDot(color: Color, label: String) {
         Text(label, color = TraceMuted, fontSize = 9.sp)
     }
 }
+
+@Composable
+fun ForensicFrequencyChart(candidates: List<HistoryCandidateEntity>) {
+    val ranked = remember(candidates) { candidates.sortedByDescending { it.totalCalls }.take(6) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("FREQUÊNCIA POR NÚMERO", color = TraceCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+        Text("Volume real do histórico importado", color = LightOnDark, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        if (ranked.isEmpty()) {
+            Text("Sem registros importados para calcular frequências.", color = TraceMuted, fontSize = 11.sp)
+        } else {
+            val maxValue = ranked.maxOf { it.totalCalls }.coerceAtLeast(1)
+            ranked.forEachIndexed { index, item ->
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("N${index + 1}", color = TraceMuted, fontSize = 9.sp, modifier = Modifier.size(width = 24.dp, height = 16.dp))
+                    Canvas(Modifier.weight(1f).height(13.dp)) {
+                        val fraction = item.totalCalls.toFloat() / maxValue
+                        drawRoundRect(
+                            color = Color.White.copy(alpha = .06f),
+                            size = androidx.compose.ui.geometry.Size(size.width, size.height),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2)
+                        )
+                        drawRoundRect(
+                            brush = androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(TraceCyan, TraceOrange)),
+                            size = androidx.compose.ui.geometry.Size(size.width * fraction, size.height),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2)
+                        )
+                    }
+                    Text(item.totalCalls.toString(), color = LightOnDark, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
