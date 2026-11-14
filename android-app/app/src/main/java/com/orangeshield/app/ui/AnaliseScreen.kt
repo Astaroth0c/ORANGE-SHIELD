@@ -85,7 +85,7 @@ fun AnaliseScreen(initialNumber: String = "") {
     var loading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var result by remember { mutableStateOf<CallAnalysis?>(null) }
-    var spoof by remember { mutableStateOf<SpoofAnalysis?>(null)
+    var spoof by remember { mutableStateOf<SpoofAnalysis?>(null) }
     var historicalEvents by remember { mutableStateOf<List<CallEventEntity>>(emptyList()) }
 
     Column(
