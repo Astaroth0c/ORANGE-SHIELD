@@ -1,5 +1,6 @@
 package com.orangeshield.app.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -25,7 +26,7 @@ data class CallEventEntity(
     val reason: String,
     val ruleVersion: String,
     val occurredAt: Long,
-    val rawNumber: String = ""
+    @ColumnInfo(defaultValue = "''") val rawNumber: String = ""
 )
 
 /** Reputação local de um número (denúncias coletivas, classificação, fraude confirmada). */
