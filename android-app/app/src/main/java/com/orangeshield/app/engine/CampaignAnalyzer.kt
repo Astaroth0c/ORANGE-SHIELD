@@ -24,6 +24,7 @@ fun detectCampaigns(
 ): List<CampaignFinding> {
     val recent = events.filter { it.occurredAt in (now - windowMillis)..now }
     val byDdd = recent.mapNotNull { event ->
+        if (!normalizePhoneDetailed(event.e164).isValid) return@mapNotNull null
         val br = parseBrazilNumber(event.e164) ?: return@mapNotNull null
         br.ddd to event
     }.groupBy({ it.first }, { it.second })
