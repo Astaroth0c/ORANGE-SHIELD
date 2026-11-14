@@ -1,6 +1,7 @@
 name: Android APK
 
 # Triggered after configuring the permanent ORANGE-SHIELD release signing secrets.
+# 2.1.0 runs normalization and campaign regression tests before packaging.
 
 concurrency:
   group: android-${{ github.ref }}
