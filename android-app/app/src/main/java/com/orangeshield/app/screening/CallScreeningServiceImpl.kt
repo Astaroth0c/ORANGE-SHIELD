@@ -1,6 +1,7 @@
 package com.orangeshield.app.screening
 
 import android.telecom.Call
+import android.telecom.Connection
 import android.telecom.CallScreeningService
 import android.os.Build
 import com.orangeshield.app.EngineProvider
@@ -40,9 +41,9 @@ class CallScreeningServiceImpl : CallScreeningService() {
             val rawNumber = callDetails.handle?.schemeSpecificPart ?: ""
             val networkVerificationStatus = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 when (callDetails.callerNumberVerificationStatus) {
-                    Call.Details.CALLER_NUMBER_VERIFICATION_STATUS_PASSED -> "PASSED"
-                    Call.Details.CALLER_NUMBER_VERIFICATION_STATUS_FAILED -> "FAILED"
-                    Call.Details.CALLER_NUMBER_VERIFICATION_STATUS_NOT_VERIFIED -> "NOT_VERIFIED"
+                    Connection.VERIFICATION_STATUS_PASSED -> "PASSED"
+                    Connection.VERIFICATION_STATUS_FAILED -> "FAILED"
+                    Connection.VERIFICATION_STATUS_NOT_VERIFIED -> "NOT_VERIFIED"
                     else -> null
                 }
             } else {
