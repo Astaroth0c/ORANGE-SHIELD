@@ -44,7 +44,8 @@ class CallRuleEngine(
     suspend fun analyzeIncomingCall(
         rawNumber: String,
         settings: EngineSettings,
-        record: Boolean = true
+        record: Boolean = true,
+        callerVerificationStatus: String? = null
     ): CallAnalysis {
         val e164 = normalizePhone(rawNumber)
         val steps = mutableListOf<EngineStep>()
@@ -53,6 +54,24 @@ class CallRuleEngine(
         var category = "unknown"
 
         steps += EngineStep("Normalizar número", e164.ifEmpty { "inválido" })
+        when (callerVerificationStatus) {
+            "PASSED" -> steps += EngineStep(
+                "Autenticação da operadora (STIR/SHAKEN)",
+                "PASSED — a rede validou a origem apresentada; isso não garante que a chamada seja segura"
+            )
+            "FAILED" -> steps += EngineStep(
+                "Autenticação da operadora (STIR/SHAKEN)",
+                "FAILED — a verificação da origem falhou; é um sinal forte de possível caller ID falsificado"
+            )
+            "NOT_VERIFIED" -> steps += EngineStep(
+                "Autenticação da operadora (STIR/SHAKEN)",
+                "NOT_VERIFIED — a rede não forneceu confirmação; resultado desconhecido, não é prova de fraude"
+            )
+            else -> steps += EngineStep(
+                "Autenticação da operadora (STIR/SHAKEN)",
+                "Não disponível neste aparelho/rede ou nesta chamada"
+            )
+        }
 
         // Chave mestra de proteção: motor inativo -> tudo passa.
         if (!settings.protectionActive) {
@@ -147,6 +166,11 @@ class CallRuleEngine(
             if (points == 0) return
             evidences += EngineEvidence(label, points)
             score += points
+        }
+
+        when (callerVerificationStatus) {
+            "FAILED" -> add("A operadora não validou a origem do identificador (STIR/SHAKEN FAILED)", 45)
+            "PASSED" -> add("Origem do identificador validada pela rede (STIR/SHAKEN PASSED)", -10)
         }
 
         // ------------------------------------------------------------------
@@ -287,7 +311,7 @@ class CallRuleEngine(
             }
             CallDecision.WARN -> "Suspeito ($score/100): exibir identificação na tela"
             CallDecision.SILENCE -> "Modo silêncio total: apenas contatos autorizados tocam"
-            CallDecision.ALLOW -> "Sem indícios de risco — chamada legítima"
+            CallDecision.ALLOW -> "Sem indícios de risco detectados — autenticidade não confirmada"
         }
 
         // ------------------------------------------------------------------
