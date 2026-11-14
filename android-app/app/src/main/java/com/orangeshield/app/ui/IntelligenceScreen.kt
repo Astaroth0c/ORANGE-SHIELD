@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,12 +20,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -64,13 +67,24 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
     val campaignFindings = remember(callEvents) { detectCampaigns(callEvents) }
     val scope = rememberCoroutineScope()
     var search by remember { mutableStateOf("") }
+    var selectedFilter by remember { mutableStateOf("all") }
     var page by remember { mutableIntStateOf(0) }
     val pageSize = 20
-    val filteredCandidates = remember(candidates, search) {
-        if (search.isBlank()) candidates else candidates.filter {
-            val digitsQuery = search.filter { ch -> ch.isDigit() }
-            (digitsQuery.isNotEmpty() && it.e164.contains(digitsQuery)) ||
-                it.suggestedLabel.contains(search, ignoreCase = true)
+    val filteredCandidates = remember(candidates, search, selectedFilter) {
+        val digitsQuery = search.filter { ch -> ch.isDigit() }
+        val recentCutoff = System.currentTimeMillis() - 7L * 24L * 60L * 60L * 1000L
+        candidates.filter { candidate ->
+            val queryMatches = search.isBlank() ||
+                (digitsQuery.isNotEmpty() && candidate.e164.contains(digitsQuery)) ||
+                candidate.suggestedLabel.contains(search, ignoreCase = true)
+            val filterMatches = when (selectedFilter) {
+                "frequent" -> candidate.totalCalls >= 4
+                "missed" -> candidate.missedCalls >= 3
+                "blocked" -> candidate.blockedCalls > 0
+                "recent" -> candidate.lastSeenAt >= recentCutoff
+                else -> true
+            }
+            queryMatches && filterMatches
         }
     }
     val pageCount = ((filteredCandidates.size + pageSize - 1) / pageSize).coerceAtLeast(1)
@@ -238,6 +252,16 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
                 singleLine = true,
                 label = { Text("Buscar número ou classificação") }
             )
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                FilterChip(selected = selectedFilter == "all", onClick = { selectedFilter = "all"; page = 0 }, label = { Text("Todos") })
+                FilterChip(selected = selectedFilter == "frequent", onClick = { selectedFilter = "frequent"; page = 0 }, label = { Text("Recorrentes") })
+                FilterChip(selected = selectedFilter == "missed", onClick = { selectedFilter = "missed"; page = 0 }, label = { Text("Perdidas") })
+                FilterChip(selected = selectedFilter == "blocked", onClick = { selectedFilter = "blocked"; page = 0 }, label = { Text("Bloqueadas") })
+                FilterChip(selected = selectedFilter == "recent", onClick = { selectedFilter = "recent"; page = 0 }, label = { Text("7 dias") })
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
