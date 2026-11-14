@@ -18,5 +18,6 @@ data class HistoryCandidateEntity(
     val lastSeenAt: Long,
     val suggestedLabel: String,
     val reviewed: Boolean = false,
-    val scannedAt: Long
+    val scannedAt: Long,
+    val rawExamples: String = ""
 )
