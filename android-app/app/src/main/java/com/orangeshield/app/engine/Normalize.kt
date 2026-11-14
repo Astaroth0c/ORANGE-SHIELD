@@ -58,6 +58,10 @@ fun normalizePhoneDetailed(raw: String?): PhoneNormalization {
     }.getOrNull()
 
     if (digits.startsWith(COUNTRY_CODE) && digits.length >= 12) {
+        val nationalPart = digits.drop(2)
+        if (nationalPart.startsWith("0303") || nationalPart.startsWith("0800") || nationalPart.startsWith("0300")) {
+            return PhoneNormalization(original, "+55$nationalPart", true, "br_service")
+        }
         val canonical = "+$digits"
         validE164(canonical, null)?.let {
             return PhoneNormalization(original, it, true, "br_international")
