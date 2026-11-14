@@ -57,7 +57,7 @@ fun normalizePhoneDetailed(raw: String?): PhoneNormalization {
         if (phoneUtil.isValidNumber(parsed)) phoneUtil.format(parsed, PhoneNumberFormat.E164) else null
     }.getOrNull()
 
-    if (digits.startsWith(COUNTRY_CODE)) {
+    if (digits.startsWith(COUNTRY_CODE) && digits.length >= 12) {
         val canonical = "+$digits"
         validE164(canonical, null)?.let {
             return PhoneNormalization(original, it, true, "br_international")
