@@ -30,7 +30,7 @@ class NormalizeTest {
 
     @Test
     fun doesNotInventBrazilianValidityForMalformedCountryNumber() {
-        val result = normalizePhoneDetailed("5504996039726")
+        val result = normalizePhoneDetailed("5500996039726")
         assertFalse(result.isValid)
         assertFalse(result.e164.startsWith("+5555"))
     }
