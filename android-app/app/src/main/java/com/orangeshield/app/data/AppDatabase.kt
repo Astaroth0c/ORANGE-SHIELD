@@ -48,6 +48,7 @@ private val MIGRATION_2_3 = object : Migration(2, 3) {
     override fun migrate(database: SupportSQLiteDatabase) {
         database.execSQL("ALTER TABLE call_events ADD COLUMN rawNumber TEXT NOT NULL DEFAULT ''")
         database.execSQL("ALTER TABLE history_candidates ADD COLUMN rawExamples TEXT NOT NULL DEFAULT ''")
+        database.execSQL("ALTER TABLE call_events ADD COLUMN networkVerificationStatus TEXT")
     }
 }
 
