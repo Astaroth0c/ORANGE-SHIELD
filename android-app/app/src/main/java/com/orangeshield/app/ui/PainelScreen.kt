@@ -241,7 +241,7 @@ fun PainelScreen() {
             StatCard(label = "Anomalias de formato", value = historyFormatFlags.toString(), modifier = Modifier.weight(1f))
         }
 
-        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -262,7 +262,7 @@ fun PainelScreen() {
         }
 
         // ---- Configuração do aparelho ----
-        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -322,7 +322,7 @@ fun PainelScreen() {
         OwnNumberCard()
 
         // ---- Os 4 passos do detector ----
-        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -353,7 +353,7 @@ fun PainelScreen() {
 
 @Composable
 private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
-    ElevatedCard(modifier = modifier) {
+    OrangeGlassCard(modifier = modifier) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 text = value,
@@ -428,7 +428,7 @@ private fun OwnNumberCard() {
     val settings by store.state.collectAsStateWithLifecycle()
     var ownNumber by remember(settings.ownNumber) { mutableStateOf(settings.ownNumber) }
 
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
