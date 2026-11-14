@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -147,8 +148,7 @@ fun ForensicNetworkGraph(
 @Composable
 private fun LegendDot(color: Color, label: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-        Box(Modifier.clip(CircleShape).background(color).height(7.dp).fillMaxWidth(.0f))
-        Box(Modifier.clip(CircleShape).background(color).height(7.dp).padding(end = 0.dp))
+        Box(Modifier.size(7.dp).clip(CircleShape).background(color))
         Text(label, color = TraceMuted, fontSize = 9.sp)
     }
 }
