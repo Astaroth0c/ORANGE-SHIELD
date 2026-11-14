@@ -2,6 +2,7 @@ package com.orangeshield.app.screening
 
 import android.telecom.Call
 import android.telecom.CallScreeningService
+import android.os.Build
 import com.orangeshield.app.EngineProvider
 import com.orangeshield.app.engine.CallDecision
 import com.orangeshield.app.notify.Notifier
@@ -37,6 +38,16 @@ class CallScreeningServiceImpl : CallScreeningService() {
             // O handle chega como URI "tel:+5511999998888" — o schemeSpecificPart
             // devolve exatamente "+5511999998888" para o motor normalizar.
             val rawNumber = callDetails.handle?.schemeSpecificPart ?: ""
+            val networkVerificationStatus = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                when (callDetails.callerNumberVerificationStatus) {
+                    Call.Details.CALLER_NUMBER_VERIFICATION_STATUS_PASSED -> "PASSED"
+                    Call.Details.CALLER_NUMBER_VERIFICATION_STATUS_FAILED -> "FAILED"
+                    Call.Details.CALLER_NUMBER_VERIFICATION_STATUS_NOT_VERIFIED -> "NOT_VERIFIED"
+                    else -> null
+                }
+            } else {
+                null
+            }
 
             // A triagem é síncrona: executa com teto de tempo e, em caso de
             // timeout ou erro, a chamada é permitida (fail-open).
@@ -44,7 +55,8 @@ class CallScreeningServiceImpl : CallScreeningService() {
                 withTimeoutOrNull(SCREENING_TIMEOUT_MS) {
                     EngineProvider.callEngine.analyzeIncomingCall(
                         rawNumber,
-                        EngineProvider.settingsStore.load()
+                        EngineProvider.settingsStore.load(),
+                        callerVerificationStatus = networkVerificationStatus
                     )
                 }
             }
