@@ -249,6 +249,7 @@ fun AnaliseScreen(initialNumber: String = "") {
                             if (event.rawNumber.isNotBlank() && event.rawNumber != event.e164) {
                                 Text("Original: ${event.rawNumber}", color = MutedOnDark, fontSize = 10.sp)
                             }
+                            event.networkVerificationStatus?.let { Text("STIR/SHAKEN: $it", color = MutedOnDark, fontSize = 10.sp) }
                             Text(event.reason, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                         }
                     }
