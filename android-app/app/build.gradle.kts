@@ -70,6 +70,7 @@ dependencies {
     // Compose — o BOM alinha todas as versões da UI
     implementation(platform("androidx.compose:compose-bom:2024.09.02"))
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     // Ícones estendidos (Shield, PhoneInTalk, Block e Chat pertencem ao conjunto estendido)
