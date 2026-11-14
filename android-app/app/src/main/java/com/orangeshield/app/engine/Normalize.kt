@@ -66,7 +66,7 @@ fun normalizePhoneDetailed(raw: String?): PhoneNormalization {
         // Corrige registros no formato 55 + 0 nacional + DDD + assinante.
         val afterCountry = digits.drop(2)
         if (afterCountry.startsWith("0")) {
-            val candidate = "+55\${afterCountry.drop(1)}"
+            val candidate = "+55${afterCountry.drop(1)}"
             validE164(candidate, null)?.let {
                 return PhoneNormalization(original, it, true, "br_trunk_prefix",
                     "Prefixo nacional 0 removido após o código do Brasil; DDD validado")
@@ -108,7 +108,7 @@ fun isShortcode(e164: String): Boolean {
 
 fun formatPhone(e164: String): String {
     val match = BR_FORMAT_RE.matchEntire(e164) ?: return e164
-    return "+55 (\${match.groupValues[1]}) \${match.groupValues[2]}-\${match.groupValues[3]}"
+    return "+55 (${match.groupValues[1]}) ${match.groupValues[2]}-${match.groupValues[3]}"
 }
 
 fun parseBrazilNumber(e164: String): BrazilNumber? {
