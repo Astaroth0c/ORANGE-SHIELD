@@ -188,3 +188,94 @@ fun ForensicFrequencyChart(candidates: List<HistoryCandidateEntity>) {
         }
     }
 }
+
+
+/**
+ * Linha do tempo das triagens efetivamente gravadas pelo motor local.
+ * Cada coluna representa uma janela de duas horas nas últimas 24 horas.
+ */
+@Composable
+fun ForensicActivityTimeline(events: List<CallEventEntity>) {
+    val now = System.currentTimeMillis()
+    val window = 24L * 60L * 60L * 1000L
+    val bucketMillis = window / 12L
+    val counts = remember(events) {
+        val end = System.currentTimeMillis()
+        val start = end - window
+        val values = MutableList(12) { 0 }
+        events.forEach { event ->
+            if (event.occurredAt in start..end) {
+                val index = ((event.occurredAt - start) / bucketMillis).toInt().coerceIn(0, 11)
+                values[index]++
+            }
+        }
+        values
+    }
+    var selectedBucket by remember(counts) { mutableIntStateOf(counts.indices.maxByOrNull { counts[it] } ?: 11) }
+    val maxCount = counts.maxOrNull()?.coerceAtLeast(1) ?: 1
+    val start = now - window
+    val formatter = remember { SimpleDateFormat("HH:mm", Locale("pt", "BR")) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("ACTIVITY TIMELINE", color = TraceCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.3.sp)
+                Text("Triagens nas últimas 24 horas", color = LightOnDark, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Text("${events.size} registros", color = TraceMuted, fontSize = 10.sp)
+        }
+        if (events.isEmpty()) {
+            Box(Modifier.fillMaxWidth().height(112.dp), contentAlignment = Alignment.Center) {
+                Text("Ainda não existem triagens registradas pelo ORANGE-SHIELD.", color = TraceMuted, fontSize = 11.sp)
+            }
+        } else {
+            Canvas(
+                Modifier.fillMaxWidth().height(112.dp)
+                    .pointerInput(counts) {
+                        detectTapGestures { tap ->
+                            selectedBucket = (tap.x / size.width * 12).toInt().coerceIn(0, 11)
+                        }
+                    }
+            ) {
+                val gap = 5.dp.toPx()
+                val barWidth = (size.width - gap * 11) / 12f
+                val baseline = size.height - 4.dp.toPx()
+                val availableHeight = size.height - 12.dp.toPx()
+                counts.forEachIndexed { index, count ->
+                    val fraction = count.toFloat() / maxCount
+                    val height = if (count == 0) 2.dp.toPx() else (availableHeight * fraction).coerceAtLeast(4.dp.toPx())
+                    val left = index * (barWidth + gap)
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = .055f),
+                        topLeft = Offset(left, 0f),
+                        size = androidx.compose.ui.geometry.Size(barWidth, baseline),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx())
+                    )
+                    drawRoundRect(
+                        color = if (index == selectedBucket) TraceOrange else TraceCyan.copy(alpha = if (count == 0) .18f else .78f),
+                        topLeft = Offset(left, baseline - height),
+                        size = androidx.compose.ui.geometry.Size(barWidth, height),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx())
+                    )
+                }
+            }
+            val bucketStart = start + selectedBucket * bucketMillis
+            val bucketEnd = bucketStart + bucketMillis
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    "${formatter.format(Date(bucketStart))}–${formatter.format(Date(bucketEnd))}",
+                    color = TraceMuted, fontSize = 10.sp
+                )
+                Text(
+                    "${counts[selectedBucket]} triagens",
+                    color = TraceOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold
+                )
+            }
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text(formatter.format(Date(start)), color = TraceMuted, fontSize = 9.sp)
+                Text("Toque em uma coluna para inspecionar o período", color = TraceMuted, fontSize = 9.sp)
+                Text(formatter.format(Date(now)), color = TraceMuted, fontSize = 9.sp)
+            }
+        }
+    }
+}
