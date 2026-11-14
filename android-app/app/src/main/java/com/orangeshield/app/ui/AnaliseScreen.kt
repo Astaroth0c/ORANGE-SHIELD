@@ -181,6 +181,33 @@ fun AnaliseScreen(initialNumber: String = "") {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            analysis.phoneNormalization?.let { identity ->
+                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Text("ORANGE IDENTITY SCAN", color = OrangePrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Recebido: ${identity.raw.ifBlank { "não informado" }}", fontSize = 12.sp)
+                        Text("Canônico: ${identity.e164.ifBlank { "não identificado" }}", fontSize = 12.sp)
+                        Text(
+                            if (identity.isValid) "Estrutura telefônica validada (${identity.source})"
+                            else "Estrutura não validada — formato sozinho não confirma fraude",
+                            color = if (identity.isValid) EmeraldOk else AmberWarn,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        identity.note?.let { Text(it, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        val networkLabel = when (analysis.callerVerificationStatus) {
+                            "PASSED" -> "STIR/SHAKEN: origem validada pela rede; não garante que a chamada seja segura"
+                            "FAILED" -> "STIR/SHAKEN: falha na validação da origem — sinal de possível spoofing"
+                            "NOT_VERIFIED" -> "STIR/SHAKEN: não verificado — autenticidade desconhecida"
+                            else -> "STIR/SHAKEN: não disponível nesta análise/rede"
+                        }
+                        Text(networkLabel, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
             Text(text = analysis.reason, fontSize = 13.sp)
             if (analysis.category != "unknown") {
                 CategoryChip(category = analysis.category)
