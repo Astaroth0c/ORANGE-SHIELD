@@ -60,7 +60,7 @@ fun ForensicNetworkGraph(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("ORANGE TRACE", color = TraceCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                Text("Mapa de relações", color = LightOnDark, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Números observados", color = LightOnDark, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
             Text("${nodes.size} nós", color = TraceMuted, fontSize = 11.sp)
         }
@@ -222,7 +222,7 @@ fun ForensicActivityTimeline(events: List<CallEventEntity>) {
                 Text("ACTIVITY TIMELINE", color = TraceCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.3.sp)
                 Text("Triagens nas últimas 24 horas", color = LightOnDark, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             }
-            Text("${events.size} registros", color = TraceMuted, fontSize = 10.sp)
+            Text("até 500 triagens", color = TraceMuted, fontSize = 10.sp)
         }
         if (events.isEmpty()) {
             Box(Modifier.fillMaxWidth().height(112.dp), contentAlignment = Alignment.Center) {
