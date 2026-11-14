@@ -229,6 +229,8 @@ fun AnaliseScreen(initialNumber: String = "") {
                             else -> "STIR/SHAKEN: não disponível nesta análise/rede"
                         }
                         Text(networkLabel, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("IP, MAC, SIM remoto e processos instalados no aparelho de origem não são expostos ao app pelo Android.", fontSize = 10.sp, color = MutedOnDark)
+                        Text("VoIP/central só será identificado quando houver metadado verificável; prefixo ou ausência de STIR não bastam.", fontSize = 10.sp, color = MutedOnDark)
                     }
                 }
             }
