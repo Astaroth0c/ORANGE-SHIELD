@@ -24,7 +24,8 @@ data class CallEventEntity(
     val spoofFlagsJson: String = "[]",
     val reason: String,
     val ruleVersion: String,
-    val occurredAt: Long
+    val occurredAt: Long,
+    val rawNumber: String = ""
 )
 
 /** Reputação local de um número (denúncias coletivas, classificação, fraude confirmada). */
