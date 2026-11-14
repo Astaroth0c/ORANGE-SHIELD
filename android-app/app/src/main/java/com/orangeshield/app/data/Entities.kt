@@ -26,7 +26,8 @@ data class CallEventEntity(
     val reason: String,
     val ruleVersion: String,
     val occurredAt: Long,
-    @ColumnInfo(defaultValue = "''") val rawNumber: String = ""
+    @ColumnInfo(defaultValue = "''") val rawNumber: String = "",
+    val networkVerificationStatus: String? = null
 )
 
 /** Reputação local de um número (denúncias coletivas, classificação, fraude confirmada). */
