@@ -84,7 +84,7 @@ fun WhatsAppScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item(key = "guardiao-header") {
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -210,7 +210,7 @@ private fun WhatsAppEventRow(
         "QUARANTINE" -> AmberWarn to "QUARENTENA"
         else -> EmeraldOk to "LIBERADA"
     }
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
