@@ -249,6 +249,7 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(item.e164, fontWeight = FontWeight.SemiBold)
                             Text(item.suggestedLabel, color = OrangeSecondary, fontSize = 11.sp)
+                            if (item.rawExamples.isNotBlank()) Text("Original: ${item.rawExamples}", color = MutedOnDark, fontSize = 10.sp)
                             Text(
                                 "${item.totalCalls} chamadas · ${item.missedCalls} perdidas · ${item.blockedCalls} marcadas bloqueadas",
                                 color = MutedOnDark, fontSize = 10.sp
