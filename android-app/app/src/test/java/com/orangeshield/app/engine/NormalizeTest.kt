@@ -44,8 +44,8 @@ class NormalizeTest {
 
     @Test
     fun preservesExplicitForeignCountryCode() {
-        val result = normalizePhoneDetailed("+1 202-555-0123")
-        assertEquals("+12025550123", result.e164)
+        val result = normalizePhoneDetailed("+1 650-253-0000")
+        assertEquals("+16502530000", result.e164)
         assertTrue(result.isValid)
     }
 }
