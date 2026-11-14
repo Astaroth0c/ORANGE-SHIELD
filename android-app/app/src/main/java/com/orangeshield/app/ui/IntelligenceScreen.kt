@@ -156,6 +156,16 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
 
         item {
             OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    ForensicNetworkGraph(candidates = candidates, onAnalyzeNumber = onAnalyzeNumber)
+                    androidx.compose.material3.HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+                    ForensicFrequencyChart(candidates = candidates)
+                }
+            }
+        }
+
+        item {
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("ORANGE TRACE · CAMPAIGN HUNTER", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     Text("Correlações locais na última hora", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
