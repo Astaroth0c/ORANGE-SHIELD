@@ -242,10 +242,10 @@ class SpoofDetector(private val db: AppDatabase) {
             if (dddNum !in VALID_DDDS) {
                 checks += SpoofCheck(
                     code = "INVALID_DDD",
-                    label = "DDD inexistente no Brasil",
-                    detail = "O DDD $ddd não existe no plano de numeração da ANATEL — caller ID sintético",
-                    points = SpoofWeights.INVALID_DDD,
-                    status = SpoofStatus.FLAGGED
+                    label = "DDD não validado",
+                    detail = "O DDD $ddd não consta na lista brasileira carregada. Isso pode indicar formato inconsistente, mas isoladamente não comprova spoofing.",
+                    points = 0,
+                    status = SpoofStatus.INFO
                 )
             } else {
                 checks += SpoofCheck(
@@ -266,10 +266,10 @@ class SpoofDetector(private val db: AppDatabase) {
                 }
                 checks += SpoofCheck(
                     code = "BAD_LENGTH",
-                    label = "Comprimento inválido",
-                    detail = detail,
-                    points = SpoofWeights.BAD_LENGTH,
-                    status = SpoofStatus.FLAGGED
+                    label = "Comprimento fora do padrão",
+                    detail = "$detail. O formato isolado não confirma fraude.",
+                    points = 0,
+                    status = SpoofStatus.INFO
                 )
             } else {
                 checks += SpoofCheck(
