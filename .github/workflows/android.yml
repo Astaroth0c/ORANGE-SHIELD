@@ -51,7 +51,7 @@ jobs:
           ORANGE_SIGNING_KEY_PASSWORD: ${{ secrets.ORANGE_SIGNING_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug assembleRelease bundleRelease --no-daemon --console=plain
+          ./gradlew testDebugUnitTest assembleDebug assembleRelease bundleRelease --no-daemon --console=plain
 
       - name: Stage Android packages
         run: |
