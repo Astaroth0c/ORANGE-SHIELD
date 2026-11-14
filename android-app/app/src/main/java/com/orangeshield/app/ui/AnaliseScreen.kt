@@ -57,6 +57,7 @@ import com.orangeshield.app.engine.SpoofStatus
 import com.orangeshield.app.engine.SpoofStepResult
 import com.orangeshield.app.engine.riskBand
 import com.orangeshield.app.engine.normalizePhoneDetailed
+import com.orangeshield.app.engine.parseBrazilNumber
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -212,6 +213,7 @@ fun AnaliseScreen(initialNumber: String = "") {
                         Text("ORANGE IDENTITY SCAN", color = OrangePrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         Text("Recebido: ${identity.raw.ifBlank { "não informado" }}", fontSize = 12.sp)
                         Text("Canônico: ${identity.e164.ifBlank { "não identificado" }}", fontSize = 12.sp)
+                        parseBrazilNumber(identity.e164)?.let { Text("DDD identificado: ${it.ddd}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         Text(
                             if (identity.isValid) "Estrutura telefônica validada (${identity.source})"
                             else "Estrutura não validada — formato sozinho não confirma fraude",
