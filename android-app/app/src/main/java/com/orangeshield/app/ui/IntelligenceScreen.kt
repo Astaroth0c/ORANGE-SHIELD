@@ -151,12 +151,12 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
                     Column(Modifier.weight(1f)) {
                         Text("ORANGE INTELLIGENCE", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                         Text("Centro de investigação", fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                        Text("ANÁLISE LOCAL · DADOS DO DISPOSITIVO", color = MutedOnDark, fontSize = 9.sp, letterSpacing = .8.sp)
+                        Text("ATÉ 500 TRIAGENS RECENTES · DADOS LOCAIS", color = MutedOnDark, fontSize = 9.sp, letterSpacing = .8.sp)
                     }
                 }
                 OrangeGlassCard(Modifier.fillMaxWidth()) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 13.dp, horizontal = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        IntelligenceMetric("TRIAGENS", callEvents.size.toString(), OrangePrimary)
+                        IntelligenceMetric("AMOSTRA", callEvents.size.toString(), OrangePrimary)
                         IntelligenceMetric("NÚMEROS", callEvents.map { it.e164 }.distinct().size.toString(), Color(0xFF42D9F5))
                         IntelligenceMetric("ALERTAS", callEvents.count { it.decision == "WARN" || it.decision == "SILENCE" || it.decision == "BLOCK" }.toString(), Color(0xFFFFB45E))
                     }
