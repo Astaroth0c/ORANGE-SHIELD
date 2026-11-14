@@ -182,7 +182,7 @@ fun AnaliseScreen(initialNumber: String = "") {
                 overflow = TextOverflow.Ellipsis
             )
             analysis.phoneNormalization?.let { identity ->
-                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(5.dp)
@@ -213,7 +213,7 @@ fun AnaliseScreen(initialNumber: String = "") {
                 CategoryChip(category = analysis.category)
             }
 
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -224,7 +224,7 @@ fun AnaliseScreen(initialNumber: String = "") {
             }
 
             if (analysis.evidences.isNotEmpty()) {
-                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -335,7 +335,7 @@ private fun SpoofStepCard(step: SpoofStepResult) {
         SpoofStatus.PASS -> EmeraldOk to "OK"
         SpoofStatus.INFO -> ZincNeutral to "Neutro"
     }
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
