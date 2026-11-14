@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.orangeshield.app.EngineProvider
+import com.orangeshield.app.engine.normalizePhoneDetailed
 import com.orangeshield.app.notify.Notifier
 import kotlinx.coroutines.launch
 
@@ -80,9 +81,10 @@ fun PainelScreen() {
         it.totalCalls >= 4 || it.blockedCalls > 0 || it.e164.startsWith("+550303")
     }
     val historyFormatFlags = historyCandidates.count { candidate ->
-        EngineProvider.spoofDetector.formatStepChecks(candidate.e164).any {
-            it.status == com.orangeshield.app.engine.SpoofStatus.FLAGGED
-        }
+        normalizePhoneDetailed(candidate.e164).isValid &&
+            EngineProvider.spoofDetector.formatStepChecks(candidate.e164).any {
+                it.status == com.orangeshield.app.engine.SpoofStatus.FLAGGED
+            }
     }
 
     // Recalcula os status de permissão quando a tela volta ao primeiro plano.
