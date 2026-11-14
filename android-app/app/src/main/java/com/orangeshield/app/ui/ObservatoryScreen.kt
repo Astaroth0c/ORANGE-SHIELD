@@ -156,7 +156,7 @@ fun ObservatoryScreen() {
 
 @Composable
 private fun GlassCard(content: @Composable ColumnScope.() -> Unit) {
-    ElevatedCard(
+    OrangeGlassCard(
         modifier = Modifier.fillMaxWidth(),
         colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
             containerColor = DarkSurface.copy(alpha = 0.78f)
@@ -172,7 +172,7 @@ private fun GlassCard(content: @Composable ColumnScope.() -> Unit) {
 
 @Composable
 private fun MetricCard(label: String, value: String, modifier: Modifier = Modifier) {
-    ElevatedCard(
+    OrangeGlassCard(
         modifier = modifier,
         colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
             containerColor = DarkSurfaceVariant.copy(alpha = 0.72f)
