@@ -71,7 +71,7 @@ data class EngineSettings(
     // Spoof Detector (Engine 04)
     val spoofProtection: Boolean = true,
     val ownNumber: String = "",
-    val ruleVersion: String = "v2.1.0"
+    val ruleVersion: String = "v2.2.0"
 )
 
 /** Padrões idênticos a DEFAULT_SETTINGS do types.ts. */
