@@ -29,6 +29,13 @@ class NormalizeTest {
     }
 
     @Test
+    fun doesNotConfuseBrazilianDdd55WithCountryCode() {
+        val result = normalizePhoneDetailed("55999991234")
+        assertEquals("+5555999991234", result.e164)
+        assertTrue(result.isValid)
+    }
+
+    @Test
     fun doesNotInventBrazilianValidityForMalformedCountryNumber() {
         val result = normalizePhoneDetailed("5500996039726")
         assertFalse(result.isValid)
