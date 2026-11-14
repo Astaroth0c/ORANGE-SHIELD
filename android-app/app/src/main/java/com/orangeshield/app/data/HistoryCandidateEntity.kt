@@ -1,5 +1,6 @@
 package com.orangeshield.app.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -19,5 +20,5 @@ data class HistoryCandidateEntity(
     val suggestedLabel: String,
     val reviewed: Boolean = false,
     val scannedAt: Long,
-    val rawExamples: String = ""
+    @ColumnInfo(defaultValue = "''") val rawExamples: String = ""
 )
