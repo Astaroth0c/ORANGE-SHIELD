@@ -36,6 +36,7 @@ class CallHistoryScanner(
             var missed: Int = 0,
             var rejected: Int = 0,
             var blocked: Int = 0,
+            val rawExamples: LinkedHashSet<String> = linkedSetOf(),
             var first: Long = Long.MAX_VALUE,
             var last: Long = 0L
         )
@@ -74,6 +75,7 @@ class CallHistoryScanner(
                 val date = if (dateIndex >= 0) cursor.getLong(dateIndex) else 0L
                 val type = if (typeIndex >= 0) cursor.getInt(typeIndex) else -1
                 val item = grouped.getOrPut(number) { Aggregate() }
+                if (!raw.isNullOrBlank() && item.rawExamples.size < 3) item.rawExamples.add(raw.trim())
                 item.total++
                 item.first = minOf(item.first, date)
                 item.last = maxOf(item.last, date)
@@ -107,7 +109,8 @@ class CallHistoryScanner(
                 firstSeenAt = if (item.first == Long.MAX_VALUE) 0L else item.first,
                 lastSeenAt = item.last,
                 suggestedLabel = label,
-                scannedAt = now
+                scannedAt = now,
+                rawExamples = item.rawExamples.joinToString(" | ")
             )
         }
         if (candidates.isNotEmpty()) dao.upsertAll(candidates)
