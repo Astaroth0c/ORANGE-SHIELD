@@ -21,6 +21,9 @@ interface CallEventDao {
     @Query("SELECT * FROM call_events WHERE e164 = :e164")
     suspend fun findByE164(e164: String): List<CallEventEntity>
 
+    @Query("SELECT * FROM call_events WHERE e164 = :e164 ORDER BY occurredAt DESC LIMIT 50")
+    suspend fun findRecentByE164(e164: String): List<CallEventEntity>
+
     @Query("SELECT * FROM call_events WHERE e164 = :e164 ORDER BY occurredAt DESC LIMIT 1")
     suspend fun findLatestByE164(e164: String): CallEventEntity?
 
