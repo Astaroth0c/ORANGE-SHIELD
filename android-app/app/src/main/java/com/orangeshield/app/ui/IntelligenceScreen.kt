@@ -142,14 +142,24 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(
-                    modifier = Modifier.size(44.dp).clip(CircleShape).background(OrangePrimary.copy(alpha = .14f)),
-                    contentAlignment = Alignment.Center
-                ) { androidx.compose.material3.Icon(Icons.Filled.Radar, null, tint = OrangePrimary) }
-                Column {
-                    Text("ORANGE INTELLIGENCE", color = OrangePrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("Central de inteligência local", fontSize = 21.sp, fontWeight = FontWeight.Bold)
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Box(
+                        modifier = Modifier.size(46.dp).clip(CircleShape).background(OrangePrimary.copy(alpha = .14f)),
+                        contentAlignment = Alignment.Center
+                    ) { androidx.compose.material3.Icon(Icons.Filled.Radar, null, tint = OrangePrimary) }
+                    Column(Modifier.weight(1f)) {
+                        Text("ORANGE INTELLIGENCE", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                        Text("Centro de investigação", fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                        Text("ANÁLISE LOCAL · DADOS DO DISPOSITIVO", color = MutedOnDark, fontSize = 9.sp, letterSpacing = .8.sp)
+                    }
+                }
+                OrangeGlassCard(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth().padding(vertical = 13.dp, horizontal = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        IntelligenceMetric("TRIAGENS", callEvents.size.toString(), OrangePrimary)
+                        IntelligenceMetric("NÚMEROS", callEvents.map { it.e164 }.distinct().size.toString(), Color(0xFF42D9F5))
+                        IntelligenceMetric("ALERTAS", callEvents.count { it.decision == "WARN" || it.decision == "SILENCE" || it.decision == "BLOCK" }.toString(), Color(0xFFFFB45E))
+                    }
                 }
             }
         }
@@ -157,7 +167,9 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
         item {
             OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    ForensicNetworkGraph(candidates = candidates, onAnalyzeNumber = onAnalyzeNumber)
+                    ForensicNetworkGraph(candidates = candidates, events = callEvents, onAnalyzeNumber = onAnalyzeNumber)
+                    androidx.compose.material3.HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+                    ForensicActivityTimeline(events = callEvents)
                     androidx.compose.material3.HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
                     ForensicFrequencyChart(candidates = candidates)
                 }
@@ -350,5 +362,14 @@ private fun MiniMetric(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value, color = OrangePrimary, fontSize = 19.sp, fontWeight = FontWeight.Bold)
         Text(label, color = MutedOnDark, fontSize = 10.sp)
+    }
+}
+
+
+@Composable
+private fun IntelligenceMetric(label: String, value: String, tint: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(value, color = tint, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = MutedOnDark, fontSize = 9.sp, fontWeight = FontWeight.SemiBold, letterSpacing = .7.sp)
     }
 }
