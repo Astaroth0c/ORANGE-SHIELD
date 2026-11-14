@@ -25,7 +25,7 @@ jobs:
 
       - name: Read app version
         run: |
-          APP_VERSION="$(sed -n 's/.*versionName = "\\(.*\\)".*/\\1/p' android-app/app/build.gradle.kts | head -n 1)"
+          APP_VERSION="$(grep -Eo 'versionName[[:space:]]*=[[:space:]]*"[^"]+"' android-app/app/build.gradle.kts | head -n 1 | cut -d '"' -f 2)"
           test -n "$APP_VERSION"
           echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
           echo "Building ORANGE-SHIELD $APP_VERSION"
