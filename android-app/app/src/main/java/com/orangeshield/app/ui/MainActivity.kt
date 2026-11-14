@@ -158,7 +158,8 @@ fun OrangeShieldApp() {
                             )
                         }
                     }
-                }
+                },
+                actions = { OrangeUpdateButton() }
             )
         },
         bottomBar = {
