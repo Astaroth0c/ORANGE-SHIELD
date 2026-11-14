@@ -53,7 +53,8 @@ class CallRuleEngine(
         var score = 0
         var category = "unknown"
 
-        steps += EngineStep("Normalizar número", e164.ifEmpty { "inválido" })
+        steps += EngineStep("Identificador recebido (original)", rawNumber.ifEmpty { "não fornecido" })
+        steps += EngineStep("Número canônico (E.164)", e164.ifEmpty { "inválido" })
         when (callerVerificationStatus) {
             "PASSED" -> steps += EngineStep(
                 "Autenticação da operadora (STIR/SHAKEN)",
