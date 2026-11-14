@@ -30,6 +30,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.orangeshield.app.data.HistoryCandidateEntity
+import com.orangeshield.app.data.CallEventEntity
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -41,9 +45,14 @@ private val TraceMuted = Color(0xFF8293A5)
 @Composable
 fun ForensicNetworkGraph(
     candidates: List<HistoryCandidateEntity>,
+    events: List<CallEventEntity> = emptyList(),
     onAnalyzeNumber: (String) -> Unit
 ) {
-    val nodes = remember(candidates) { candidates.sortedByDescending { it.totalCalls }.take(12) }
+    val eventCounts = remember(events) { events.groupingBy { it.e164 }.eachCount() }
+    val nodes = remember(candidates, eventCounts) {
+        candidates.sortedWith(compareByDescending<HistoryCandidateEntity> { eventCounts[it.e164] ?: 0 }
+            .thenByDescending { it.totalCalls }).take(12)
+    }
     var selectedIndex by remember(nodes) { mutableIntStateOf(0) }
     val selected = nodes.getOrNull(selectedIndex)
 
@@ -91,18 +100,12 @@ fun ForensicNetworkGraph(
                     val angle = -PI / 2.0 + (2.0 * PI * i / nodes.size)
                     Offset(center.x + cos(angle).toFloat() * radius, center.y + sin(angle).toFloat() * radius)
                 }
-                // Conexões são agrupamentos observáveis por DDD, não prova de identidade comum.
-                for (i in nodes.indices) {
-                    for (j in i + 1 until nodes.size) {
-                        val a = nodes[i].e164.filter { it.isDigit() }
-                        val b = nodes[j].e164.filter { it.isDigit() }
-                        val dddA = if (a.length >= 4) a.substring(2, 4) else ""
-                        val dddB = if (b.length >= 4) b.substring(2, 4) else ""
-                        if (dddA.isNotBlank() && dddA == dddB) {
-                            drawLine(TraceCyan.copy(alpha = .22f), positions[i], positions[j], 5.dp.toPx(), cap = StrokeCap.Round)
-                            drawLine(TraceCyan.copy(alpha = .72f), positions[i], positions[j], 1.dp.toPx(), cap = StrokeCap.Round)
-                        }
-                    }
+                // Cada raio liga um número ao núcleo de registros locais.
+                // Não desenhamos ligações entre números sem evidência relacional real.
+                positions.forEachIndexed { index, point ->
+                    val weight = (eventCounts[nodes[index].e164] ?: 0).coerceAtMost(12)
+                    val alpha = if (weight > 0) .22f + weight * .035f else .12f
+                    drawLine(TraceCyan.copy(alpha = alpha), center, point, (1f + weight * .12f).dp.toPx(), cap = StrokeCap.Round)
                 }
                 drawCircle(TraceOrange.copy(alpha = .08f), radius * .42f, center)
                 drawCircle(TraceCyan.copy(alpha = .18f), radius * .42f, center, style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
@@ -118,7 +121,7 @@ fun ForensicNetworkGraph(
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
                 LegendDot(TraceCyan, "Número importado")
                 LegendDot(TraceOrange, "Selecionado")
-                LegendDot(Color(0xFF607D8B), "Mesmo DDD")
+                LegendDot(Color(0xFF607D8B), "Registro local")
             }
             selected?.let { item ->
                 Row(
@@ -128,7 +131,7 @@ fun ForensicNetworkGraph(
                 ) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(item.e164, color = LightOnDark, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                        Text("${item.totalCalls} chamadas · ${item.missedCalls} perdidas · ${item.blockedCalls} marcadas bloqueadas",
+                        Text("${item.totalCalls} no histórico · ${eventCounts[item.e164] ?: 0} triagens do app",
                             color = TraceMuted, fontSize = 10.sp)
                         Text(item.suggestedLabel, color = TraceOrange, fontSize = 10.sp)
                     }
@@ -139,7 +142,7 @@ fun ForensicNetworkGraph(
             }
         }
         Text(
-            "As linhas agrupam números pelo mesmo DDD. Isso é uma relação geográfica do plano de numeração, não evidência de que os números pertencem à mesma pessoa ou campanha.",
+            "Os raios indicam apenas que o número possui registro local. A intensidade considera triagens do ORANGE-SHIELD; não representa vínculo entre números.",
             color = TraceMuted, fontSize = 10.sp, lineHeight = 14.sp
         )
     }
