@@ -322,7 +322,7 @@ class CallRuleEngine(
                 val top = evidences.take(2).joinToString("; ") { it.label }
                 "Risco alto ($score/100): ${top.ifEmpty { "política do usuário" }}"
             }
-            CallDecision.WARN -> "Suspeito ($score/100): exibir identificação na tela"
+            CallDecision.WARN -> "Suspeito ($score/100): ${evidences.take(2).joinToString("; ") { it.label }.ifEmpty { "sinais insuficientes para detalhar" }}"
             CallDecision.SILENCE -> "Modo silêncio total: apenas contatos autorizados tocam"
             CallDecision.ALLOW -> "Sem indícios de risco detectados — autenticidade não confirmada"
         }
