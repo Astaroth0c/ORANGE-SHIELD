@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.orangeshield.app.EngineProvider
+import com.orangeshield.app.engine.detectCampaigns
 import com.orangeshield.app.history.CallHistoryScanner
 import kotlinx.coroutines.launch
 import java.text.DateFormat
@@ -58,6 +60,8 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
     val context = LocalContext.current
     val dao = EngineProvider.database.historyCandidateDao()
     val candidates by dao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val callEvents by EngineProvider.database.callEventDao().listRecent(500).collectAsStateWithLifecycle(initialValue = emptyList())
+    val campaignFindings = remember(callEvents) { detectCampaigns(callEvents) }
     val scope = rememberCoroutineScope()
     var search by remember { mutableStateOf("") }
     var page by remember { mutableIntStateOf(0) }
@@ -132,6 +136,32 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
                 Column {
                     Text("ORANGE INTELLIGENCE", color = OrangePrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Text("Central de inteligência local", fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        item {
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("ORANGE TRACE · CAMPAIGN HUNTER", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Correlações locais na última hora", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Usa apenas chamadas reais que o ORANGE-SHIELD já triou. Associação por DDD é indício comportamental, não prova de fraude.",
+                        color = MutedOnDark,
+                        fontSize = 11.sp
+                    )
+                    if (campaignFindings.isEmpty()) {
+                        Text("Nenhuma concentração que atinja o limite de investigação foi encontrada.", color = MutedOnDark, fontSize = 12.sp)
+                    } else {
+                        campaignFindings.forEach { finding ->
+                            androidx.compose.material3.HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+                            Text("DDD ${finding.ddd} · ${finding.distinctNumbers} números · ${finding.totalCalls} chamadas",
+                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Confiança ${finding.confidence} · revisar manualmente", color = OrangeSecondary, fontSize = 11.sp)
+                            Text(finding.numbers.take(6).joinToString("  •  "), color = MutedOnDark, fontSize = 10.sp)
+                            Text(finding.explanation, color = MutedOnDark, fontSize = 10.sp)
+                        }
+                    }
                 }
             }
         }
