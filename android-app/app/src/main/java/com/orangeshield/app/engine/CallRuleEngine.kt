@@ -321,6 +321,7 @@ class CallRuleEngine(
         if (record) {
             recordCallEvent(
                 e164 = e164,
+                rawNumber = rawNumber,
                 decision = decision,
                 riskScore = score,
                 category = category,
@@ -345,6 +346,7 @@ class CallRuleEngine(
 
     private suspend fun recordCallEvent(
         e164: String,
+        rawNumber: String,
         decision: CallDecision,
         riskScore: Int,
         category: String,
@@ -357,6 +359,7 @@ class CallRuleEngine(
             db.callEventDao().insert(
                 CallEventEntity(
                     e164 = e164,
+                    rawNumber = rawNumber,
                     decision = decision.name,
                     riskScore = riskScore,
                     category = category.ifEmpty { null },
