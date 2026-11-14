@@ -47,7 +47,8 @@ class CallRuleEngine(
         record: Boolean = true,
         callerVerificationStatus: String? = null
     ): CallAnalysis {
-        val e164 = normalizePhone(rawNumber)
+        val normalization = normalizePhoneDetailed(rawNumber)
+        val e164 = normalization.e164
         val steps = mutableListOf<EngineStep>()
         val evidences = mutableListOf<EngineEvidence>()
         var score = 0
@@ -55,6 +56,7 @@ class CallRuleEngine(
 
         steps += EngineStep("Identificador recebido (original)", rawNumber.ifEmpty { "não fornecido" })
         steps += EngineStep("Número canônico (E.164)", e164.ifEmpty { "inválido" })
+        steps += EngineStep("Validação do plano telefônico", if (normalization.isValid) "Estrutura validada (${normalization.source})" else normalization.note ?: "Não foi possível validar o formato")
         when (callerVerificationStatus) {
             "PASSED" -> steps += EngineStep(
                 "Autenticação da operadora (STIR/SHAKEN)",
@@ -178,7 +180,7 @@ class CallRuleEngine(
         // 4a. Spoof Detector — manipulação de caller ID (Engine 04)
         // ------------------------------------------------------------------
         val spoofFlags = mutableListOf<SpoofFlag>()
-        if (settings.spoofProtection) {
+        if (settings.spoofProtection && normalization.isValid) {
             val spoof = spoofDetector.analyzeSpoofing(e164, settings.ownNumber)
             val flagged = spoof.checks.filter { it.status == SpoofStatus.FLAGGED }
             spoofFlags += flagged.map { SpoofFlag(code = it.code, label = it.label, points = it.points) }
@@ -199,6 +201,8 @@ class CallRuleEngine(
                     }
                 )
             }
+        } else if (settings.spoofProtection) {
+            steps += EngineStep("Detector de spoofing", "Pontuação suspensa: número não validado; evitar falso positivo por erro de formatação")
         }
 
         // Prefixo 0303 da Anatel (telemarketing)
