@@ -335,6 +335,7 @@ class CallRuleEngine(
             recordCallEvent(
                 e164 = e164,
                 rawNumber = rawNumber,
+                callerVerificationStatus = callerVerificationStatus,
                 decision = decision,
                 riskScore = score,
                 category = category,
@@ -362,6 +363,7 @@ class CallRuleEngine(
     private suspend fun recordCallEvent(
         e164: String,
         rawNumber: String,
+        callerVerificationStatus: String?,
         decision: CallDecision,
         riskScore: Int,
         category: String,
@@ -375,6 +377,7 @@ class CallRuleEngine(
                 CallEventEntity(
                     e164 = e164,
                     rawNumber = rawNumber,
+                    networkVerificationStatus = callerVerificationStatus,
                     decision = decision.name,
                     riskScore = riskScore,
                     category = category.ifEmpty { null },
