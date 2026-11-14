@@ -13,8 +13,8 @@ android {
         applicationId = "com.orangeshield.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 11
-        versionName = "2.2.0"
+        versionCode = 12
+        versionName = "2.3.0"
     }
 
     // Release signing is injected only by the build environment.
@@ -76,6 +76,8 @@ dependencies {
     // Ícones estendidos (Shield, PhoneInTalk, Block e Chat pertencem ao conjunto estendido)
     implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    implementation("androidx.core:core-ktx:1.13.1")
 
     // Activity / Lifecycle
     implementation("androidx.activity:activity-compose:1.9.2")
