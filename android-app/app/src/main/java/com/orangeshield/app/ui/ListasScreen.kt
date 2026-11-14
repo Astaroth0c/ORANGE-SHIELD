@@ -227,7 +227,7 @@ private fun ListRow(
     deleteDescription: String,
     onDelete: () -> Unit
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -328,7 +328,7 @@ private fun HistorySuggestions() {
             }
         }
         items(visible, key = { it.e164 }) { item ->
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Text(formatPhone(item.e164), fontWeight = FontWeight.SemiBold)
                     Text(item.suggestedLabel, color = OrangePrimary, fontSize = 12.sp)
@@ -410,7 +410,7 @@ private fun NativeBlockedHistory() {
             }
         }
         items(blocked, key = { it.e164 }) { item ->
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(formatPhone(item.e164), fontWeight = FontWeight.SemiBold)
                     Text("${item.blockedCalls} registro(s) marcado(s) como bloqueado(s)",
