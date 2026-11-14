@@ -11,6 +11,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,30 +36,39 @@ fun OrangeUpdateButton() {
     var message by remember { mutableStateOf<String?>(null) }
     var dialogOpen by remember { mutableStateOf(false) }
 
-    fun checkForUpdates() {
+    suspend fun checkForUpdates(showDialog: Boolean) {
         checking = true
         downloading = false
         release = null
-        message = "Consultando as versões publicadas no GitHub…"
-        dialogOpen = true
-        scope.launch {
-            runCatching { manager.check() }
-                .onSuccess { result ->
-                    when (result) {
-                        UpdateCheck.UpToDate -> message = "Você já está usando a versão mais recente disponível."
-                        is UpdateCheck.Available -> {
-                            release = result.release
-                            message = "Nova versão ${result.release.version} disponível."
-                        }
+        if (showDialog) {
+            message = "Consultando as versões publicadas no GitHub…"
+            dialogOpen = true
+        }
+        runCatching { manager.check() }
+            .onSuccess { result ->
+                when (result) {
+                    UpdateCheck.UpToDate -> {
+                        if (showDialog) message = "Você já está usando a versão mais recente disponível."
+                    }
+                    is UpdateCheck.Available -> {
+                        release = result.release
+                        message = "Nova versão ${result.release.version} disponível."
+                        dialogOpen = true
                     }
                 }
-                .onFailure { message = it.message ?: "Não foi possível verificar atualizações." }
-            checking = false
-        }
+            }
+            .onFailure {
+                if (showDialog) message = it.message ?: "Não foi possível verificar atualizações."
+            }
+        checking = false
+    }
+
+    LaunchedEffect(Unit) {
+        checkForUpdates(showDialog = false)
     }
 
     androidx.compose.material3.TextButton(
-        onClick = { checkForUpdates() },
+        onClick = { scope.launch { checkForUpdates(showDialog = true) } },
         enabled = !checking && !downloading
     ) {
         Text(if (checking) "VERIFICANDO" else "ATUALIZAR")
