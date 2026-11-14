@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.orangeshield.app.EngineProvider
+import com.orangeshield.app.data.CallEventEntity
 import com.orangeshield.app.engine.CallAnalysis
 import com.orangeshield.app.engine.CallDecision
 import com.orangeshield.app.engine.EngineEvidence
@@ -59,6 +60,8 @@ import com.orangeshield.app.engine.normalizePhoneDetailed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.DateFormat
+import java.util.Date
 
 /**
  * ORANGE SHIELD — aba Análise.
@@ -81,7 +84,8 @@ fun AnaliseScreen(initialNumber: String = "") {
     var loading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var result by remember { mutableStateOf<CallAnalysis?>(null) }
-    var spoof by remember { mutableStateOf<SpoofAnalysis?>(null) }
+    var spoof by remember { mutableStateOf<SpoofAnalysis?>(null)
+    var historicalEvents by remember { mutableStateOf<List<CallEventEntity>>(emptyList()) }
 
     Column(
         modifier = Modifier
@@ -137,6 +141,9 @@ fun AnaliseScreen(initialNumber: String = "") {
                                 null
                             }
                         }
+                        historicalEvents = if (analysis.e164.isNotBlank()) {
+                            withContext(Dispatchers.IO) { EngineProvider.database.callEventDao().findRecentByE164(analysis.e164) }
+                        } else emptyList()
                         result = analysis
                         spoof = spoofAnalysis
                     } catch (e: Exception) {
@@ -158,6 +165,21 @@ fun AnaliseScreen(initialNumber: String = "") {
 
         result?.let { analysis ->
             DecisionBadge(decision = analysis.decision)
+
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("ORANGE ORCHESTRATOR · REGRAS EXPLICÁVEIS", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(analysis.reason, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    val recommendation = when (analysis.decision) {
+                        CallDecision.ALLOW -> "Nenhum sinal atingiu o limiar atual. Isso não comprova a identidade; não compartilhe códigos ou dados sensíveis."
+                        CallDecision.WARN -> "Atenda com cautela, se desejar. Não informe senhas, códigos ou dados bancários; confirme a empresa por um canal oficial."
+                        CallDecision.SILENCE -> "A chamada foi silenciada pela política ativa. Revise o histórico antes de liberar o identificador."
+                        CallDecision.BLOCK -> "A chamada foi bloqueada por regras ativas. Revise as evidências antes de adicionar exceções."
+                    }
+                    Text(recommendation, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                    Text("Decisão determinística no aparelho: combina regras, reputação e sinais disponíveis; não usa IA generativa nem consulta uma nuvem.", color = MutedOnDark, fontSize = 10.sp)
+                }
+            }
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
@@ -213,6 +235,25 @@ fun AnaliseScreen(initialNumber: String = "") {
                 CategoryChip(category = analysis.category)
             }
 
+
+            if (historicalEvents.isNotEmpty()) {
+                OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("HISTÓRICO DESTE IDENTIFICADOR", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        historicalEvents.take(10).forEach { event ->
+                            Text(
+                                "${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(event.occurredAt))} · ${event.decision} · risco ${event.riskScore}/100",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            if (event.rawNumber.isNotBlank() && event.rawNumber != event.e164) {
+                                Text("Original: ${event.rawNumber}", color = MutedOnDark, fontSize = 10.sp)
+                            }
+                            Text(event.reason, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                        }
+                    }
+                }
+            }
             OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(14.dp),
