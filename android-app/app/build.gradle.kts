@@ -13,8 +13,8 @@ android {
         applicationId = "com.orangeshield.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 9
-        versionName = "2.0.0-beta.1"
+        versionCode = 10
+        versionName = "2.1.0"
     }
 
     // Release signing is injected only by the build environment.
@@ -87,6 +87,12 @@ dependencies {
     implementation("androidx.room:room-runtime:2.7.0")
     implementation("androidx.room:room-ktx:2.7.0")
     ksp("androidx.room:room-compiler:2.7.0")
+
+    // Validação de numeração internacional e plano telefônico atualizado
+    implementation("com.googlecode.libphonenumber:libphonenumber:9.0.43")
+
+    // Testes unitários do motor
+    testImplementation("junit:junit:4.13.2")
 
     // Corrotinas
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
