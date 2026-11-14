@@ -32,9 +32,9 @@ fun OrangeGlassCard(
             .background(
                 Brush.linearGradient(
                     colors = listOf(
-                        Color(0xFF25252A).copy(alpha = 0.96f),
-                        Color(0xFF171719).copy(alpha = 0.98f),
-                        Color(0xFF24170F).copy(alpha = 0.92f)
+                        Color(0xFF25252A).copy(alpha = 0.76f),
+                        Color(0xFF171719).copy(alpha = 0.84f),
+                        Color(0xFF24170F).copy(alpha = 0.72f)
                     )
                 )
             )
@@ -42,8 +42,8 @@ fun OrangeGlassCard(
                 width = 1.dp,
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.12f),
-                        OrangePrimary.copy(alpha = 0.20f),
+                        Color.White.copy(alpha = 0.20f),
+                        OrangePrimary.copy(alpha = 0.30f),
                         Color.White.copy(alpha = 0.04f)
                     )
                 ),
