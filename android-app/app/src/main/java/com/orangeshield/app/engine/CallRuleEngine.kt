@@ -87,7 +87,9 @@ class CallRuleEngine(
                 evidences = emptyList(),
                 steps = steps.toList(),
                 reason = "Proteção desativada pelo usuário",
-                ruleVersion = settings.ruleVersion
+                ruleVersion = settings.ruleVersion,
+            phoneNormalization = normalization,
+            callerVerificationStatus = callerVerificationStatus
             )
         }
 
@@ -111,7 +113,9 @@ class CallRuleEngine(
                 evidences = emptyList(),
                 steps = steps.toList(),
                 reason = "Número autorizado na lista de permissões",
-                ruleVersion = settings.ruleVersion
+                ruleVersion = settings.ruleVersion,
+            phoneNormalization = normalization,
+            callerVerificationStatus = callerVerificationStatus
             )
         }
         steps += EngineStep("Lista de autorizados", "Não está autorizado")
@@ -130,7 +134,9 @@ class CallRuleEngine(
                 evidences = listOf(EngineEvidence("Número presente na lista pessoal de bloqueio", 100)),
                 steps = steps.toList(),
                 reason = blocked.label ?: "Número bloqueado manualmente",
-                ruleVersion = settings.ruleVersion
+                ruleVersion = settings.ruleVersion,
+            phoneNormalization = normalization,
+            callerVerificationStatus = callerVerificationStatus
             )
         }
         steps += EngineStep("Lista pessoal de bloqueio", "Sem bloqueio manual")
@@ -150,7 +156,9 @@ class CallRuleEngine(
                 evidences = listOf(EngineEvidence("Número denunciado como golpe (confirmado)", 100)),
                 steps = steps.toList(),
                 reason = "Golpe confirmado na base de reputação",
-                ruleVersion = settings.ruleVersion
+                ruleVersion = settings.ruleVersion,
+            phoneNormalization = normalization,
+            callerVerificationStatus = callerVerificationStatus
             )
         }
         steps += EngineStep(
@@ -345,7 +353,9 @@ class CallRuleEngine(
             evidences = evidences.toList(),
             steps = steps.toList(),
             reason = reason,
-            ruleVersion = settings.ruleVersion
+            ruleVersion = settings.ruleVersion,
+            phoneNormalization = normalization,
+            callerVerificationStatus = callerVerificationStatus
         )
     }
 
