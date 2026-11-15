@@ -19,9 +19,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         BlockedEntity::class,
         AllowedEntity::class,
         WhatsAppEventEntity::class,
-        HistoryCandidateEntity::class
+        HistoryCandidateEntity::class,
+        CommunityReportEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun phoneListDao(): PhoneListDao
     abstract fun whatsappEventDao(): WhatsAppEventDao
     abstract fun historyCandidateDao(): HistoryCandidateDao
+    abstract fun communityReportDao(): CommunityReportDao
 }
 
 /**
@@ -52,6 +54,22 @@ private val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+private val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            "CREATE TABLE IF NOT EXISTS community_reports (" +
+                "e164 TEXT NOT NULL PRIMARY KEY, " +
+                "classification TEXT NOT NULL, " +
+                "reportCount INTEGER NOT NULL, " +
+                "confidence REAL NOT NULL, " +
+                "notes TEXT NOT NULL, " +
+                "updatedAt INTEGER NOT NULL, " +
+                "feedVersion TEXT NOT NULL)"
+        )
+        database.execSQL("CREATE INDEX IF NOT EXISTS index_community_reports_e164 ON community_reports (e164)")
+    }
+}
+
 object DatabaseProvider {
 
     @Volatile
@@ -63,6 +81,6 @@ object DatabaseProvider {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "orange_shield.db"
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { instance = it }
         }
 }

@@ -13,8 +13,8 @@ android {
         applicationId = "com.orangeshield.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 14
-        versionName = "2.5.0"
+        versionCode = 15
+        versionName = "2.6.0"
     }
 
     // Release signing is injected only by the build environment.
@@ -93,6 +93,9 @@ dependencies {
 
     // Validação de numeração internacional e plano telefônico atualizado
     implementation("com.googlecode.libphonenumber:libphonenumber:9.0.43")
+    // ORANGE LENS — dados offline reais: praça/região e operadora de origem do prefixo
+    implementation("com.googlecode.libphonenumber:geocoder:3.43")
+    implementation("com.googlecode.libphonenumber:carrier:2.43")
 
     // Testes unitários do motor
     testImplementation("junit:junit:4.13.2")

@@ -115,7 +115,15 @@ fun OrangeShieldApp() {
     }
 
     // Carrega as configurações persistidas (SharedPreferences) uma vez.
-    LaunchedEffect(Unit) { store.load() }
+    LaunchedEffect(Unit) {
+        store.load()
+        // ORANGE LENS: sincroniza o feed comunitário em segundo plano (silencioso).
+        launch {
+            runCatching {
+                com.orangeshield.app.osint.OrangeLens.syncCommunityFeed(context.applicationContext)
+            }
+        }
+    }
 
     Scaffold(
         containerColor = DarkBackground,
