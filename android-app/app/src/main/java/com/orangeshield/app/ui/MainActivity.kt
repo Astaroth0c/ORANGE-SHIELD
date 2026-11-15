@@ -45,6 +45,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
@@ -164,7 +171,7 @@ fun OrangeShieldApp() {
         },
         bottomBar = {
             NavigationBar(
-                containerColor = DarkSurface,
+                containerColor = DarkSurface.copy(alpha = 0.86f),
                 contentColor = LightOnDark,
                 tonalElevation = 12.dp
             ) {
@@ -208,10 +215,27 @@ fun OrangeShieldApp() {
                     )
                 )
         ) {
+            AmbientGlow(modifier = Modifier.fillMaxSize())
             NavHost(
                 navController = navController,
                 startDestination = "painel",
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                enterTransition = {
+                    fadeIn(tween(durationMillis = 280)) +
+                        slideInVertically(tween(durationMillis = 340)) { it / 22 }
+                },
+                exitTransition = {
+                    fadeOut(tween(durationMillis = 180)) +
+                        scaleOut(targetScale = 0.985f, animationSpec = tween(durationMillis = 220))
+                },
+                popEnterTransition = {
+                    fadeIn(tween(durationMillis = 280)) +
+                        scaleIn(initialScale = 0.985f, animationSpec = tween(durationMillis = 300))
+                },
+                popExitTransition = {
+                    fadeOut(tween(durationMillis = 180)) +
+                        slideOutVertically(tween(durationMillis = 260)) { it / 26 }
+                }
             ) {
             composable("painel") { PainelScreen() }
             composable("inteligencia") { IntelligenceScreen(onAnalyzeNumber = { number -> navController.navigate("analise?number=${Uri.encode(number)}") }) }

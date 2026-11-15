@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -74,14 +75,14 @@ fun ObservatoryScreen() {
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MetricCard("Chamadas no Radar", importedCalls.toString(), Modifier.weight(1f))
-                MetricCard("Números mapeados", candidates.size.toString(), Modifier.weight(1f))
+                MetricCard("Chamadas no Radar", importedCalls, Modifier.weight(1f))
+                MetricCard("Números mapeados", candidates.size, Modifier.weight(1f))
             }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MetricCard("Bloqueios no histórico", importedBlocked.toString(), Modifier.weight(1f))
-                MetricCard("Triagens do app", events.size.toString(), Modifier.weight(1f))
+                MetricCard("Bloqueios no histórico", importedBlocked, Modifier.weight(1f))
+                MetricCard("Triagens do app", events.size, Modifier.weight(1f))
             }
         }
         item {
@@ -100,7 +101,7 @@ fun ObservatoryScreen() {
         item {
             GlassCard {
                 Text("ANOMALIAS ESTRUTURAIS · RADAR", fontSize = 12.sp, color = OrangeSecondary, fontWeight = FontWeight.Bold)
-                MetricCard("Números com formato atípico", formatAnomalies.size.toString(), Modifier.fillMaxWidth())
+                MetricCard("Números com formato atípico", formatAnomalies.size, Modifier.fillMaxWidth())
                 if (formatAnomalies.isEmpty()) {
                     EmptyChartMessage("Nenhuma anomalia estrutural foi identificada nos números importados.")
                 } else {
@@ -168,12 +169,12 @@ private fun GlassCard(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun MetricCard(label: String, value: String, modifier: Modifier = Modifier) {
+private fun MetricCard(label: String, value: Int, modifier: Modifier = Modifier) {
     OrangeGlassCard(
         modifier = modifier
     ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(value, fontSize = 22.sp, color = OrangePrimary, fontWeight = FontWeight.Bold)
+            AnimatedCounter(value = value, fontSize = 22.sp)
             Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -182,6 +183,8 @@ private fun MetricCard(label: String, value: String, modifier: Modifier = Modifi
 @Composable
 private fun DecisionBar(label: String, value: Int, total: Int, color: Color) {
     val trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+    val target = if (total <= 0) 0f else (value.toFloat() / total).coerceIn(0f, 1f)
+    val fraction = rememberAnimatedFraction(target)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text(label, fontSize = 11.sp, maxLines = 1, modifier = Modifier.weight(1f))
@@ -189,9 +192,10 @@ private fun DecisionBar(label: String, value: Int, total: Int, color: Color) {
         }
         Canvas(Modifier.fillMaxWidth().height(8.dp)) {
             drawRoundRect(color = trackColor, size = size, cornerRadius = CornerRadius(8f, 8f))
-            val fraction = if (total <= 0) 0f else (value.toFloat() / total).coerceIn(0f, 1f)
             drawRoundRect(
-                color = color.copy(alpha = 0.92f),
+                brush = Brush.horizontalGradient(
+                    colors = listOf(color.copy(alpha = 0.65f), color)
+                ),
                 topLeft = Offset.Zero,
                 size = Size(size.width * fraction, size.height),
                 cornerRadius = CornerRadius(8f, 8f)

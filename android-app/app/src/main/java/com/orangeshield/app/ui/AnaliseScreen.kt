@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -165,7 +164,9 @@ fun AnaliseScreen(initialNumber: String = "") {
         }
 
         result?.let { analysis ->
-            DecisionBadge(decision = analysis.decision)
+            Row(modifier = Modifier.entrance(0), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                DecisionBadge(decision = analysis.decision)
+            }
 
             OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -182,19 +183,15 @@ fun AnaliseScreen(initialNumber: String = "") {
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Risco: ${analysis.riskScore}/100 — ${riskBand(analysis.riskScore)}",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                LinearProgressIndicator(
-                    progress = { analysis.riskScore / 100f },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp),
-                    trackColor = DarkSurfaceVariant
-                )
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth().entrance(1)) {
+                Column(
+                    modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("SCORE DE RISCO", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    RiskGauge(score = analysis.riskScore, band = riskBand(analysis.riskScore))
+                }
             }
 
             Text(

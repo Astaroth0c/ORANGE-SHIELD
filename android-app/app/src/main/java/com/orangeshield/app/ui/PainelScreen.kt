@@ -71,7 +71,10 @@ fun PainelScreen() {
     val total by dao.countTotal().collectAsStateWithLifecycle(initialValue = 0)
     val blocked by dao.countByDecision("BLOCK").collectAsStateWithLifecycle(initialValue = 0)
     val warned by dao.countByDecision("WARN").collectAsStateWithLifecycle(initialValue = 0)
+    val allowed by dao.countByDecision("ALLOW").collectAsStateWithLifecycle(initialValue = 0)
+    val silenced by dao.countByDecision("SILENCE").collectAsStateWithLifecycle(initialValue = 0)
     val spoofFlagged by dao.countByCategory("spoofing").collectAsStateWithLifecycle(initialValue = 0)
+    val recentEvents by dao.listRecent(500).collectAsStateWithLifecycle(initialValue = emptyList())
     val historyDao = EngineProvider.database.historyCandidateDao()
     val historyCandidates by historyDao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val historyCalls = historyCandidates.sumOf { it.totalCalls }
@@ -226,24 +229,68 @@ fun PainelScreen() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Painel de proteção", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Column(modifier = Modifier.entrance(0)) {
+            Text("PAINEL DE PROTEÇÃO", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+            Text("Visão geral do escudo", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        }
 
         // ---- Estatísticas ----
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard(label = "Triagens", value = total.toString(), modifier = Modifier.weight(1f))
-            StatCard(label = "Bloqueadas", value = blocked.toString(), modifier = Modifier.weight(1f))
+        Row(modifier = Modifier.entrance(1), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatCard(label = "Triagens", value = total, modifier = Modifier.weight(1f))
+            StatCard(label = "Bloqueadas", value = blocked, modifier = Modifier.weight(1f))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard(label = "Alertadas", value = warned.toString(), modifier = Modifier.weight(1f))
-            StatCard(label = "Spoofing em triagens", value = spoofFlagged.toString(), modifier = Modifier.weight(1f))
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard(label = "Sinais para revisar", value = historyReview.toString(), modifier = Modifier.weight(1f))
-            StatCard(label = "Anomalias de formato", value = historyFormatFlags.toString(), modifier = Modifier.weight(1f))
+        Row(modifier = Modifier.entrance(2), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatCard(label = "Alertadas", value = warned, modifier = Modifier.weight(1f))
+            StatCard(label = "Spoofing em triagens", value = spoofFlagged, modifier = Modifier.weight(1f))
         }
 
-        OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+        // ---- Distribuição real das decisões ----
+        OrangeGlassCard(modifier = Modifier.fillMaxWidth().entrance(3)) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text("DECISÕES · DISTRIBUIÇÃO REAL", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                DecisionDonut(
+                    slices = listOf(
+                        DonutSlice("Permitidas", allowed, EmeraldOk),
+                        DonutSlice("Alertadas", warned, AmberWarn),
+                        DonutSlice("Silenciadas", silenced, ZincNeutral),
+                        DonutSlice("Bloqueadas", blocked, RedBlock)
+                    )
+                )
+                if (total == 0) {
+                    Text(
+                        "Nenhuma chamada triada ainda. Ative a triagem de chamadas abaixo; o gráfico se monta com as triagens reais do aparelho.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // ---- Atividade dos últimos 7 dias ----
+        OrangeGlassCard(modifier = Modifier.fillMaxWidth().entrance(4)) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text("ATIVIDADE · ÚLTIMOS 7 DIAS", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                WeekActivityChart(events = recentEvents)
+                Text(
+                    "Volume diário de triagens processadas pelo motor no aparelho.",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Row(modifier = Modifier.entrance(5), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StatCard(label = "Sinais para revisar", value = historyReview, modifier = Modifier.weight(1f))
+            StatCard(label = "Anomalias de formato", value = historyFormatFlags, modifier = Modifier.weight(1f))
+        }
+
+        OrangeGlassCard(modifier = Modifier.fillMaxWidth().entrance(6)) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -251,9 +298,9 @@ fun PainelScreen() {
                 Text("INTELIGÊNCIA IMPORTADA DO RADAR", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Text("Dados reais do histórico do aparelho", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatCard(label = "Chamadas lidas", value = historyCalls.toString(), modifier = Modifier.weight(1f))
-                    StatCard(label = "Números", value = historyNumbers.toString(), modifier = Modifier.weight(1f))
-                    StatCard(label = "Marcadas bloqueadas", value = historyBlocked.toString(), modifier = Modifier.weight(1f))
+                    StatCard(label = "Chamadas lidas", value = historyCalls, modifier = Modifier.weight(1f))
+                    StatCard(label = "Números", value = historyNumbers, modifier = Modifier.weight(1f))
+                    StatCard(label = "Marcadas bloqueadas", value = historyBlocked, modifier = Modifier.weight(1f))
                 }
                 Text(
                     "As triagens acima contam chamadas processadas pelo ORANGE SHIELD. Estes indicadores mostram separadamente o histórico importado pelo Radar; registros nativos de bloqueio variam conforme o fabricante.",
@@ -354,16 +401,10 @@ fun PainelScreen() {
 }
 
 @Composable
-private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
+private fun StatCard(label: String, value: Int, modifier: Modifier = Modifier) {
     OrangeGlassCard(modifier = modifier) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(
-                text = value,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                color = OrangePrimary,
-                maxLines = 1
-            )
+            AnimatedCounter(value = value, fontSize = 26.sp)
             Text(
                 text = label,
                 fontSize = 12.sp,
