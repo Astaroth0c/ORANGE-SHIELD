@@ -193,7 +193,7 @@ object OrangeLens {
         }
     }
 
-    private val ENGINE_CLASSES = setOf("robocall", "telemarketing", "collector", "verified_business")
+    private val ENGINE_CLASSES = setOf("robocall", "telemarketing", "collector", "verified_business", "nuisance")
 
     private fun parseFeed(array: JSONArray): List<CommunityReportEntity> {
         val now = System.currentTimeMillis()

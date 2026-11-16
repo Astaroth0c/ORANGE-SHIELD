@@ -7,7 +7,7 @@ listas pessoais e painel local. Toda a inteligência do console web
 sem rede, sem telemetria, sem aleatoriedade (motor determinístico).
 
 - **Pacote:** `com.orangeshield.app`
-- **Versão:** 2.6.0 (versionCode 15) — linha de trabalho `work/v2.5-glass-premium`
+- **Versão:** 2.7.0 (versionCode 16) — linha de trabalho `work/v2.5-glass-premium`
 - **Stack:** Kotlin 2.2.0 · AGP 8.10.1 · Jetpack Compose (Material3) · Room 2.6.1 (KSP) · corrotinas
 - **SDK:** compileSdk/targetSdk 36 · minSdk 29 (Android 10+ — necessário para `CallScreeningService` + `RoleManager`)
 - **Idioma:** pt-BR em toda a UI

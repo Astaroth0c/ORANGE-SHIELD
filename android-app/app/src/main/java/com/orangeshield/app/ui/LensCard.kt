@@ -86,6 +86,7 @@ fun OrangeLensCard(e164: String, modifier: Modifier = Modifier) {
                     "telemarketing" -> "Telemarketing (comunidade)"
                     "robocall" -> "Robocall (comunidade)"
                     "collector" -> "Cobrança (comunidade)"
+                    "nuisance" -> "Incômodo recorrente (comunidade)"
                     "verified_business" -> "Empresa verificada (comunidade)"
                     else -> "Registrado no feed comunitário"
                 }

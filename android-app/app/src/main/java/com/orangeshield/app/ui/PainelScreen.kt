@@ -29,6 +29,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -370,6 +372,9 @@ fun PainelScreen() {
         // ---- Número do usuário (Passo 2 · neighbor spoofing) ----
         OwnNumberCard()
 
+        // ---- ORANGE VOICE (assistente de chamadas por voz) ----
+        VoiceAssistantCard()
+
         // ---- Os 4 passos do detector ----
         OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -460,6 +465,81 @@ private fun StepLine(title: String, description: String) {
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+private fun VoiceAssistantCard() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val store = EngineProvider.settingsStore
+    val settings by store.state.collectAsStateWithLifecycle()
+
+    val answerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted &&
+            ContextCompat.checkSelfPermission(context, android.Manifest.permission.ANSWER_PHONE_CALLS)
+            != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            answerLauncher.launch(android.Manifest.permission.ANSWER_PHONE_CALLS)
+        }
+    }
+
+    OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "ORANGE VOICE",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = OrangePrimary
+                    )
+                    Text(
+                        "Assistente que fala durante o toque e obedece comandos de voz.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = settings.voiceAssistant,
+                    onCheckedChange = { checked ->
+                        scope.launch {
+                            store.save(settings.copy(voiceAssistant = checked))
+                            com.orangeshield.app.voice.RingingCallState.voiceEnabled = checked
+                            if (checked) {
+                                val mic = ContextCompat.checkSelfPermission(
+                                    context, android.Manifest.permission.RECORD_AUDIO
+                                )
+                                val answer = ContextCompat.checkSelfPermission(
+                                    context, android.Manifest.permission.ANSWER_PHONE_CALLS
+                                )
+                                when {
+                                    mic != android.content.pm.PackageManager.PERMISSION_GRANTED ->
+                                        micLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                                    answer != android.content.pm.PackageManager.PERMISSION_GRANTED ->
+                                        answerLauncher.launch(android.Manifest.permission.ANSWER_PHONE_CALLS)
+                                    else -> Toast.makeText(context, "ORANGE VOICE ativado.", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+            Text(
+                "Durante o toque o app anuncia: \"Spam. Provável tentativa de golpe.\" ou \"Número desconhecido ligando.\" e escuta: \"cancelar chamada\", \"cancelar chamada e bloquear número\" ou \"atender\" (responde em viva voz).",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                "Limitações reais do Android: atender por voz usa a tecla de headset (melhor esforço, varia por fabricante); no Android 14+ o microfone em segundo plano pode ser restringido pelo sistema — o anúncio por voz continua funcionando.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

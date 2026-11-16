@@ -114,6 +114,11 @@ fun OrangeShieldApp() {
         }
     }
 
+    // ORANGE VOICE: espelha o interruptor para o receiver (sem I/O no broadcast).
+    LaunchedEffect(settings.voiceAssistant) {
+        com.orangeshield.app.voice.RingingCallState.voiceEnabled = settings.voiceAssistant
+    }
+
     // Carrega as configurações persistidas (SharedPreferences) uma vez.
     LaunchedEffect(Unit) {
         store.load()

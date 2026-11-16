@@ -113,7 +113,16 @@ class CallHistoryScanner(
                 rawExamples = item.rawExamples.joinToString(" | ")
             )
         }
-        if (candidates.isNotEmpty()) dao.upsertAll(candidates)
+        if (candidates.isNotEmpty()) {
+            dao.upsertAll(candidates)
+            // ORANGE: números com padrão real de incômodo (recusas/não atendidas
+            // em volume) entram na base de reputação e passam a influenciar
+            // o Passo 4 do Spoof Detector e as decisões do Call Guard.
+            com.orangeshield.app.engine.NuisanceAnalyzer.applyToReputation(
+                com.orangeshield.app.data.DatabaseProvider.getInstance(context),
+                candidates
+            )
+        }
         ScanSummary(
             scannedRows = rows,
             uniqueNumbers = grouped.size,

@@ -19,7 +19,7 @@ do Call Guard em chamadas reais.
 | Campo | Tipo | Descrição |
 |---|---|---|
 | `e164` | string | Número em E.164, ex.: `+5511999999999` |
-| `classification` | string | `fraud_confirmed` · `spam_reports` · `telemarketing` · `robocall` · `collector` · `verified_business` |
+| `classification` | string | `fraud_confirmed` · `spam_reports` · `telemarketing` · `robocall` · `collector` · `nuisance` · `verified_business` |
 | `reportCount` | int | Quantidade de denúncias revisadas |
 | `confidence` | number | 0.0–1.0 — confiança do mantenedor na denúncia |
 | `notes` | string | Resposta curta e objetiva do ocorrido (sem dados pessoais) |
@@ -31,6 +31,7 @@ do Call Guard em chamadas reais.
 - `fraud_confirmed` → **+100** no spoof score (spoofing provável, Call Guard bloqueia conforme thresholds)
 - `reportCount > 0` → **+10 a +40** ponderado pela confiança
 - `robocall` / `telemarketing` / `collector` → **+30**
+- `nuisance` (incômodo recorrente: volume alto de recusadas/não atendidas) → **+25**
 - `verified_business` → reputação positiva (não adiciona risco)
 
 ## Compromissos

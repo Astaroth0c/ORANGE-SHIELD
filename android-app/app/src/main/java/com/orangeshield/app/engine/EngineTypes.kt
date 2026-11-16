@@ -61,6 +61,8 @@ data class EngineSettings(
     val blockUnknownNumbers: Boolean = false,
     val silenceMode: Boolean = false,
     val insistenceProtection: Boolean = true,
+    // ORANGE VOICE (assistente de chamadas por voz)
+    val voiceAssistant: Boolean = false,
     // WhatsApp Guard (Engine 03)
     val waProtect: Boolean = true,
     val waBlockUnknown: Boolean = false,

@@ -71,6 +71,18 @@ class CallScreeningServiceImpl : CallScreeningService() {
                 .build()
             respondToCall(callDetails, response)
 
+            // ORANGE VOICE: publica o veredito para o assistente de voz
+            // (chamadas não bloqueadas tocam — o assistente anuncia e escuta comandos).
+            if (!block) {
+                com.orangeshield.app.voice.RingingCallState.onScreened(
+                    number = analysis?.e164?.takeIf { it.isNotEmpty() } ?: rawNumber.takeIf { it.isNotBlank() },
+                    decision = analysis?.decision?.name,
+                    reputationFlagged = (analysis?.riskScore ?: 0) >= 55 ||
+                        (analysis?.category in setOf("golpe_confirmado", "fraude_confirmada", "spam", "spoofing", "nuisance")),
+                    allowed = false
+                )
+            }
+
             when (analysis?.decision) {
                 CallDecision.BLOCK -> Notifier.postCallAlert(
                     context = this,

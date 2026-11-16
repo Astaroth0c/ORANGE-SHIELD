@@ -13,8 +13,8 @@ android {
         applicationId = "com.orangeshield.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 15
-        versionName = "2.6.0"
+        versionCode = 16
+        versionName = "2.7.0"
     }
 
     // Release signing is injected only by the build environment.
