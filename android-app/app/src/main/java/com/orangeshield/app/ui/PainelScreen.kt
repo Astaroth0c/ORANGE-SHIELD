@@ -476,14 +476,19 @@ private fun VoiceAssistantCard() {
     val settings by store.state.collectAsStateWithLifecycle()
 
     val answerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val contactsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted &&
+        when {
+            !granted -> Unit
             ContextCompat.checkSelfPermission(context, android.Manifest.permission.ANSWER_PHONE_CALLS)
-            != android.content.pm.PackageManager.PERMISSION_GRANTED
-        ) {
-            answerLauncher.launch(android.Manifest.permission.ANSWER_PHONE_CALLS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED ->
+                answerLauncher.launch(android.Manifest.permission.ANSWER_PHONE_CALLS)
+            ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CONTACTS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED ->
+                contactsLauncher.launch(android.Manifest.permission.READ_CONTACTS)
         }
     }
+    var voiceTest by remember { mutableStateOf<String?>(null) }
 
     OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -522,6 +527,9 @@ private fun VoiceAssistantCard() {
                                         micLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
                                     answer != android.content.pm.PackageManager.PERMISSION_GRANTED ->
                                         answerLauncher.launch(android.Manifest.permission.ANSWER_PHONE_CALLS)
+                                    ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CONTACTS)
+                                        != android.content.pm.PackageManager.PERMISSION_GRANTED ->
+                                        contactsLauncher.launch(android.Manifest.permission.READ_CONTACTS)
                                     else -> Toast.makeText(context, "ORANGE VOICE ativado.", Toast.LENGTH_SHORT).show()
                                 }
                             }
@@ -530,10 +538,33 @@ private fun VoiceAssistantCard() {
                 )
             }
             Text(
-                "Durante o toque o app anuncia: \"Spam. Provável tentativa de golpe.\" ou \"Número desconhecido ligando.\" e escuta: \"cancelar chamada\", \"cancelar chamada e bloquear número\" ou \"atender\" (responde em viva voz).",
+                "Durante o toque o app anuncia: \"Spam. Provável tentativa de golpe.\" (número marcado na base), o nome do contato da agenda (ex.: \"Chamada de Esposa.\") ou \"Número desconhecido ligando.\" — e escuta: \"cancelar chamada\", \"cancelar chamada e bloquear número\" ou \"atender\" (responde em viva voz).",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            TextButton(
+                onClick = {
+                    val mic = ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO)
+                    if (mic != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        voiceTest = "Conceda a permissão de microfone primeiro (ative o interruptor)."
+                    } else {
+                        voiceTest = "Falando... diga algo quando terminar."
+                        com.orangeshield.app.voice.VoiceTest.run(context) { heard, error ->
+                            voiceTest = heard?.let { "Reconhecimento OK: \"$it\"" } ?: error
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Testar voz (fala e escuta de verdade)", fontSize = 12.sp)
+            }
+            voiceTest?.let {
+                Text(
+                    it,
+                    fontSize = 12.sp,
+                    color = OrangePrimary
+                )
+            }
             Text(
                 "Limitações reais do Android: atender por voz usa a tecla de headset (melhor esforço, varia por fabricante); no Android 14+ o microfone em segundo plano pode ser restringido pelo sistema — o anúncio por voz continua funcionando.",
                 fontSize = 11.sp,

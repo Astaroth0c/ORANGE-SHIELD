@@ -10,7 +10,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.provider.ContactsContract
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -128,15 +130,39 @@ class VoiceCallService : Service(), RecognitionListener {
     /** Fala o veredito da triagem enquanto o telefone toca. */
     private fun announceVerdict() {
         val state = RingingCallState
-        if (state.isAllowedContact) return
+        val contact = contactName(state.ringingNumber)
         val script = when {
             state.reputationFlagged || state.screeningDecision == "WARN" ->
                 "Atenção. Spam. Provável tentativa de golpe."
+            !contact.isNullOrBlank() -> "Chamada de $contact."
             state.screeningDecision == null || state.screeningDecision == "ALLOW" ->
                 "Número desconhecido ligando."
             else -> return
         }
         speak("$script Diga: cancelar chamada, ou: atender.")
+    }
+
+    /** Nome do contato na agenda para o número tocando (PhoneLookup normalizado). */
+    private fun contactName(number: String?): String? {
+        if (number.isNullOrBlank()) return null
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CONTACTS)
+            != PackageManager.PERMISSION_GRANTED
+        ) return null
+        return runCatching {
+            val uri = ContactsContract.PhoneLookup.CONTENT_FILTER_URI
+                .buildUpon()
+                .appendPath(number)
+                .build()
+            contentResolver.query(
+                uri,
+                arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME),
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            }
+        }.getOrNull()
     }
 
     private fun speak(text: String) {
@@ -217,19 +243,49 @@ class VoiceCallService : Service(), RecognitionListener {
         false
     }
 
-    /** Atender: tecla de headset (melhor esforço) + viva-voz. */
+    /**
+     * Atender: caminho principal via TelecomManager.acceptRingingCall()
+     * (permissão ANSWER_PHONE_CALLS); tecla de headset como fallback.
+     * Viva-voz ativado em duas tentativas (a chamada pode ainda estar
+     * estabelecendo no primeiro instante).
+     */
     private fun answerRingingCall(): Boolean = try {
+        val canAnswer = ContextCompat.checkSelfPermission(this, android.Manifest.permission.ANSWER_PHONE_CALLS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (canAnswer) {
+            runCatching { telecom?.acceptRingingCall() }
+        }
         val down = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_HEADSETHOOK)
         val up = KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_HEADSETHOOK)
         audioManager.dispatchMediaKeyEvent(down)
         audioManager.dispatchMediaKeyEvent(up)
         scope.launch {
-            delay(1_500)
-            runCatching { audioManager.setSpeakerphoneOn(true) }
+            delay(1_200)
+            enableSpeakerphone()
+            delay(1_800)
+            enableSpeakerphone()
         }
         true
     } catch (_: Exception) {
         false
+    }
+
+    private fun enableSpeakerphone() {
+        runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val speaker = audioManager.availableCommunicationDevices
+                    .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                if (speaker != null) {
+                    audioManager.setCommunicationDevice(speaker)
+                } else {
+                    @Suppress("DEPRECATION")
+                    audioManager.setSpeakerphoneOn(true)
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager.setSpeakerphoneOn(true)
+            }
+        }
     }
 
     private suspend fun blockRingingNumber() {
