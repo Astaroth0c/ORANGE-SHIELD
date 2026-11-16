@@ -43,6 +43,7 @@ class SettingsStore(context: Context) {
             blockUnknownNumbers = prefs.getBoolean(KEY_BLOCK_UNKNOWN_NUMBERS, defaults.blockUnknownNumbers),
             silenceMode = prefs.getBoolean(KEY_SILENCE_MODE, defaults.silenceMode),
             insistenceProtection = prefs.getBoolean(KEY_INSISTENCE_PROTECTION, defaults.insistenceProtection),
+            voiceAssistant = prefs.getBoolean(KEY_VOICE_ASSISTANT, defaults.voiceAssistant),
             waProtect = prefs.getBoolean(KEY_WA_PROTECT, defaults.waProtect),
             waBlockUnknown = prefs.getBoolean(KEY_WA_BLOCK_UNKNOWN, defaults.waBlockUnknown),
             waBlockLinks = prefs.getBoolean(KEY_WA_BLOCK_LINKS, defaults.waBlockLinks),
@@ -70,6 +71,7 @@ class SettingsStore(context: Context) {
             .putBoolean(KEY_BLOCK_UNKNOWN_NUMBERS, settings.blockUnknownNumbers)
             .putBoolean(KEY_SILENCE_MODE, settings.silenceMode)
             .putBoolean(KEY_INSISTENCE_PROTECTION, settings.insistenceProtection)
+            .putBoolean(KEY_VOICE_ASSISTANT, settings.voiceAssistant)
             .putBoolean(KEY_WA_PROTECT, settings.waProtect)
             .putBoolean(KEY_WA_BLOCK_UNKNOWN, settings.waBlockUnknown)
             .putBoolean(KEY_WA_BLOCK_LINKS, settings.waBlockLinks)
@@ -98,6 +100,7 @@ class SettingsStore(context: Context) {
         const val KEY_BLOCK_UNKNOWN_NUMBERS = "blockUnknownNumbers"
         const val KEY_SILENCE_MODE = "silenceMode"
         const val KEY_INSISTENCE_PROTECTION = "insistenceProtection"
+        const val KEY_VOICE_ASSISTANT = "voiceAssistant"
         const val KEY_WA_PROTECT = "waProtect"
         const val KEY_WA_BLOCK_UNKNOWN = "waBlockUnknown"
         const val KEY_WA_BLOCK_LINKS = "waBlockLinks"

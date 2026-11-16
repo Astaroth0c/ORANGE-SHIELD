@@ -14,13 +14,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 
 /**
  * ORANGE SHIELD · GUARDIÃO WHATSAPP
  *
- * NotificationListenerService que intercepta as notificações do WhatsApp e
- * do WhatsApp Business, aplica o catálogo determinístico de golpes
- * (WhatsAppEngine) e registra o histórico local.
+ * NotificationListenerService com opt-in explícito: analisa apenas notificações
+ * do WhatsApp/WhatsApp Business, aplica o catálogo de golpes e guarda somente
+ * um fingerprint SHA-256 do texto, nunca o conteúdo original.
  *
  * IMPORTANTE: o WhatsApp não oferece API pública para bloquear automaticamente
  * uma conversa/remetente. Por isso o guardião NÃO bloqueia a mensagem de
@@ -41,6 +42,12 @@ class WhatsAppGuardService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val packageName = sbn.packageName
         if (packageName != PACKAGE_WHATSAPP && packageName != PACKAGE_WHATSAPP_BUSINESS) return
+
+        // Process notifications only after the user has explicitly accepted
+        // the in-app disclosure and enabled Android's notification access.
+        val consent = getSharedPreferences(PRIVACY_PREFS, MODE_PRIVATE)
+            .getBoolean(KEY_WHATSAPP_CONSENT, false)
+        if (!consent) return
 
         val extras = sbn.notification?.extras ?: return
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim().orEmpty()
@@ -65,16 +72,19 @@ class WhatsAppGuardService : NotificationListenerService() {
 
                 val dao = EngineProvider.database.whatsappEventDao()
                 val now = System.currentTimeMillis()
+                val fingerprint = MessageDigest.getInstance("SHA-256")
+                    .digest(text.toByteArray(Charsets.UTF_8))
+                    .joinToString("") { "%02x".format(it) }
 
-                // Evita duplicar o evento quando o WhatsApp republica/atualiza a notificação.
-                if (dao.countRecent(analysis.sender, text, now - DUPLICATE_WINDOW_MS) > 0) {
+                // Deduplica republicações sem guardar o conteúdo original.
+                if (dao.countRecent(analysis.sender, "SHA-256:$fingerprint", now - DUPLICATE_WINDOW_MS) > 0) {
                     return@launch
                 }
 
                 dao.insert(
                     WhatsAppEventEntity(
                         sender = analysis.sender,
-                        content = text,
+                        content = "SHA-256:$fingerprint",
                         decision = analysis.decision.name,
                         riskScore = analysis.riskScore,
                         category = analysis.category,
@@ -126,5 +136,7 @@ class WhatsAppGuardService : NotificationListenerService() {
         const val PACKAGE_WHATSAPP_BUSINESS = "com.whatsapp.w4b"
         const val DUPLICATE_WINDOW_MS = 30_000L
         const val FORWARDED_MARKER = "encaminhada muitas vezes"
+        const val PRIVACY_PREFS = "orange_shield_privacy"
+        const val KEY_WHATSAPP_CONSENT = "whatsapp_notification_access_consent"
     }
 }

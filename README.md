@@ -102,7 +102,7 @@ bunx tsx prisma/seed.ts
 
 ## 🤖 App Android (`android-app/`)
 
-Cliente Android nativo (Kotlin + Jetpack Compose, Material 3 tema laranja escuro) que roda a mesma inteligência **no aparelho**, com Room como base local. **APK de release assinado disponível** em [`download/ORANGE-SHIELD-v1.0.0.apk`](download/ORANGE-SHIELD-v1.0.0.apk) e na aba **Releases** do GitHub.
+Cliente Android nativo (Kotlin + Jetpack Compose, Material 3 tema laranja escuro) que roda a mesma inteligência **no aparelho**, com Room como base local. **v1.0.0 preservada como backup histórico**. A linha de melhorias está na branch `work/v1.1-security-observatory`; não use a assinatura antiga para novas versões.
 
 | Componente | Papel |
 |------------|-------|
@@ -115,7 +115,7 @@ Cliente Android nativo (Kotlin + Jetpack Compose, Material 3 tema laranja escuro
 
 ### 📲 Instalação do APK (sem Android Studio)
 
-1. Baixe `ORANGE-SHIELD-v1.0.0.apk` (Releases do GitHub ou pasta `download/`).
+A v1.0.0 é somente backup histórico e pode ser bloqueada pelo Play Protect por declarar acesso a notificações. A v1.1 mantém o Guardião WhatsApp com consentimento explícito e deve ser distribuída por teste interno da Play Store após revisão.
 2. No aparelho (Android 10+), toque no arquivo e autorize "Instalar de fontes desconhecidas" para o navegador/gerenciador de arquivos.
 3. Abra o app e conceda, na aba **Painel**:
    - **Triagem de chamadas** (diálogo nativo do sistema);
@@ -125,7 +125,7 @@ Cliente Android nativo (Kotlin + Jetpack Compose, Material 3 tema laranja escuro
 
 SHA-256 do APK v1.0.0: `44bbb854279b2ee30848bb013014fb940b246fc14f0a6dca4f78e7996ce16ada`
 
-Build: `cd android-app && ./gradlew assembleRelease` (wrapper versionado incluído; JDK 17 + SDK 34). Assinado com a chave commitada `orangeshield-release.keystore` (projeto pessoal — troque por chave privada antes de publicar em loja). Detalhes em [`android-app/README.md`](android-app/README.md).
+Build v1.1: `cd android-app && ./gradlew assembleRelease` (JDK 17 + Android SDK 36). A assinatura deve vir de segredos privados do GitHub Actions; nenhuma keystore deve ser commitada. A chave v1.0.0 foi exposta no repositório e não deve ser reutilizada. Detalhes em [`android-app/README.md`](android-app/README.md).
 
 ## 🗺️ Histórico de versões
 

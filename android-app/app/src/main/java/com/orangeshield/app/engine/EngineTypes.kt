@@ -40,7 +40,9 @@ data class CallAnalysis(
     val evidences: List<EngineEvidence>,
     val steps: List<EngineStep>,
     val reason: String,
-    val ruleVersion: String
+    val ruleVersion: String,
+    val phoneNormalization: PhoneNormalization? = null,
+    val callerVerificationStatus: String? = null
 )
 
 /**
@@ -59,6 +61,8 @@ data class EngineSettings(
     val blockUnknownNumbers: Boolean = false,
     val silenceMode: Boolean = false,
     val insistenceProtection: Boolean = true,
+    // ORANGE VOICE (assistente de chamadas por voz)
+    val voiceAssistant: Boolean = false,
     // WhatsApp Guard (Engine 03)
     val waProtect: Boolean = true,
     val waBlockUnknown: Boolean = false,
@@ -69,7 +73,7 @@ data class EngineSettings(
     // Spoof Detector (Engine 04)
     val spoofProtection: Boolean = true,
     val ownNumber: String = "",
-    val ruleVersion: String = "v1.2.0"
+    val ruleVersion: String = "v2.2.0"
 )
 
 /** Padrões idênticos a DEFAULT_SETTINGS do types.ts. */

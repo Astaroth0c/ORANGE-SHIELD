@@ -1,23 +1,31 @@
 package com.orangeshield.app.ui
 
 import android.os.Bundle
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.PhoneInTalk
+import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -28,6 +36,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +45,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -44,8 +63,7 @@ import kotlinx.coroutines.launch
 
 /**
  * ORANGE SHIELD — MainActivity (Jetpack Compose).
- * TopAppBar com a chave mestra de proteção + NavigationBar com 4 telas:
- * Painel, Simulador, Listas e WhatsApp.
+ * TopAppBar com a chave mestra de proteção + NavigationBar com Painel, Análise, Listas, WhatsApp e Observatório.
  */
 class MainActivity : ComponentActivity() {
 
@@ -69,9 +87,11 @@ private data class NavItem(
 
 private val NAV_ITEMS = listOf(
     NavItem("painel", "Painel", Icons.Filled.Shield),
+    NavItem("inteligencia", "Radar", Icons.Filled.Radar),
     NavItem("analise", "Análise", Icons.Filled.PhoneInTalk),
     NavItem("listas", "Listas", Icons.Filled.Block),
-    NavItem("whatsapp", "WhatsApp", Icons.Filled.Chat)
+    NavItem("whatsapp", "WhatsApp", Icons.Filled.Chat),
+    NavItem("observatorio", "Observatório", Icons.Filled.Insights)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,7 +102,7 @@ fun OrangeShieldApp() {
     val store = EngineProvider.settingsStore
     val settings by store.state.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route ?: "painel"
+    val currentRoute = backStackEntry?.destination?.route?.substringBefore("?") ?: "painel"
 
     // Versão do app lida do PackageManager (sem texto fixo no código).
     val context = LocalContext.current
@@ -94,12 +114,31 @@ fun OrangeShieldApp() {
         }
     }
 
+    // ORANGE VOICE: espelha o interruptor para o receiver (sem I/O no broadcast).
+    LaunchedEffect(settings.voiceAssistant) {
+        com.orangeshield.app.voice.RingingCallState.voiceEnabled = settings.voiceAssistant
+    }
+
     // Carrega as configurações persistidas (SharedPreferences) uma vez.
-    LaunchedEffect(Unit) { store.load() }
+    LaunchedEffect(Unit) {
+        store.load()
+        // ORANGE LENS: sincroniza o feed comunitário em segundo plano (silencioso).
+        launch {
+            runCatching {
+                com.orangeshield.app.osint.OrangeLens.syncCommunityFeed(context.applicationContext)
+            }
+        }
+    }
 
     Scaffold(
+        containerColor = DarkBackground,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = DarkBackground,
+                    scrolledContainerColor = DarkSurface,
+                    titleContentColor = LightOnDark
+                ),
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -139,11 +178,16 @@ fun OrangeShieldApp() {
                             )
                         }
                     }
-                }
+                },
+                actions = { OrangeUpdateButton() }
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = DarkSurface.copy(alpha = 0.86f),
+                contentColor = LightOnDark,
+                tonalElevation = 12.dp
+            ) {
                 NAV_ITEMS.forEach { item ->
                     NavigationBarItem(
                         selected = currentRoute == item.route,
@@ -157,21 +201,62 @@ fun OrangeShieldApp() {
                             }
                         },
                         icon = { Icon(imageVector = item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) }
+                        label = { Text(item.label, maxLines = 1, fontSize = 10.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = OrangePrimary,
+                            selectedTextColor = OrangeSecondary,
+                            indicatorColor = Color(0xFF3A2115),
+                            unselectedIconColor = MutedOnDark,
+                            unselectedTextColor = MutedOnDark
+                        )
                     )
                 }
             }
         }
     ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = "painel",
-            modifier = Modifier.padding(padding)
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            DarkBackground,
+                            Color(0xFF101013),
+                            Color(0xFF17100D)
+                        )
+                    )
+                )
         ) {
+            AmbientGlow(modifier = Modifier.fillMaxSize())
+            NavHost(
+                navController = navController,
+                startDestination = "painel",
+                modifier = Modifier.fillMaxSize(),
+                enterTransition = {
+                    fadeIn(tween(durationMillis = 280)) +
+                        slideInVertically(tween(durationMillis = 340)) { it / 22 }
+                },
+                exitTransition = {
+                    fadeOut(tween(durationMillis = 180)) +
+                        scaleOut(targetScale = 0.985f, animationSpec = tween(durationMillis = 220))
+                },
+                popEnterTransition = {
+                    fadeIn(tween(durationMillis = 280)) +
+                        scaleIn(initialScale = 0.985f, animationSpec = tween(durationMillis = 300))
+                },
+                popExitTransition = {
+                    fadeOut(tween(durationMillis = 180)) +
+                        slideOutVertically(tween(durationMillis = 260)) { it / 26 }
+                }
+            ) {
             composable("painel") { PainelScreen() }
-            composable("analise") { AnaliseScreen() }
+            composable("inteligencia") { IntelligenceScreen(onAnalyzeNumber = { number -> navController.navigate("analise?number=${Uri.encode(number)}") }) }
+            composable("analise?number={number}", arguments = listOf(navArgument("number") { type = NavType.StringType; defaultValue = "" })) { entry -> AnaliseScreen(initialNumber = entry.arguments?.getString("number").orEmpty()) }
             composable("listas") { ListasScreen() }
             composable("whatsapp") { WhatsAppScreen() }
+            composable("observatorio") { ObservatoryScreen() }
+            }
         }
     }
 }

@@ -7,16 +7,22 @@ listas pessoais e painel local. Toda a inteligência do console web
 sem rede, sem telemetria, sem aleatoriedade (motor determinístico).
 
 - **Pacote:** `com.orangeshield.app`
-- **Versão:** 1.0.0 (versionCode 5) — **APK de release assinado** em [`../download/ORANGE-SHIELD-v1.0.0.apk`](../download/ORANGE-SHIELD-v1.0.0.apk) e nas Releases do GitHub
-- **Stack:** Kotlin 2.0.20 · AGP 8.5.2 · Jetpack Compose (Material3) · Room 2.6.1 (KSP) · corrotinas
-- **SDK:** compileSdk/targetSdk 34 · minSdk 29 (Android 10+ — necessário para `CallScreeningService` + `RoleManager`)
+- **Versão:** 2.7.0 (versionCode 16) — linha de trabalho `work/v2.5-glass-premium`
+- **Stack:** Kotlin 2.2.0 · AGP 8.10.1 · Jetpack Compose (Material3) · Room 2.6.1 (KSP) · corrotinas
+- **SDK:** compileSdk/targetSdk 36 · minSdk 29 (Android 10+ — necessário para `CallScreeningService` + `RoleManager`)
 - **Idioma:** pt-BR em toda a UI
 
 ---
 
-## 1. Instalação do APK (sem Android Studio)
+## 1. Distribuição e instalação
 
-1. Baixe `ORANGE-SHIELD-v1.0.0.apk` (pasta `download/` do repositório ou a aba **Releases**).
+A v1.1 mantém o `NotificationListenerService` para preservar o Guardião WhatsApp. O Google documenta que o Play Protect pode bloquear sideloads (download por navegador/mensageiro/gerenciador) quando um app declara `NOTIFICATION_LISTENER`. Portanto, não existe um ajuste de tela ou assinatura que garanta a instalação direta do APK mantendo esse recurso. O caminho suportado é distribuir pela Play Store (começando por teste interno/fechado) ou solicitar revisão/appeal ao Google após auditoria. Não oriente o usuário a desativar o Play Protect.
+
+A partir da v1.2, `READ_CALL_LOG` é solicitada somente quando o usuário inicia explicitamente a varredura do Radar. O app lê e agrega registros localmente para sugerir números a revisar; não altera o histórico nativo nem bloqueia automaticamente candidatos. Essa permissão é restrita pelas políticas do Google Play e precisa ser declarada/revisada quando aplicável. `READ_PHONE_STATE` permanece removida por não haver uso no código atual.
+
+## 1.1. Instalação do APK (sem Android Studio)
+
+1. Use o APK do artefato da execução de CI da branch v1.1.0. Para distribuição ao público, use o teste interno da Play Store.
 2. Toque no APK no aparelho (Android 10+) e autorize a instalação de fontes desconhecidas.
 3. Abra o app e ative, na aba **Painel**: **Triagem de chamadas** (diálogo do sistema),
    **Acesso a notificações** (Guardião WhatsApp) e **Notificações do app** (Android 13+).
@@ -25,20 +31,15 @@ sem rede, sem telemetria, sem aleatoriedade (motor determinístico).
 > chamadas e mensagens reais processadas no aparelho. A aba **Análise** roda o
 > motor em modo **somente leitura** (não grava nada no histórico).
 
-SHA-256 do APK v1.0.0:
-`44bbb854279b2ee30848bb013014fb940b246fc14f0a6dca4f78e7996ce16ada`
 
-Assinatura: chave commitada `orangeshield-release.keystore` (alias `orangeshield`,
-senha `OrangeShield2024!`) — intencional para projeto pessoal: garante rebuilds e
-atualizações instaláveis por cima da mesma assinatura. Troque por uma chave
-privada sua antes de publicar em loja.
+**Assinatura:** a chave antiga foi exposta no histórico público do repositório e não deve ser reutilizada. A v1.1 lê a chave nova exclusivamente de segredos do GitHub Actions (`ORANGE_SIGNING_STORE_BASE64`, `ORANGE_SIGNING_STORE_PASSWORD`, `ORANGE_SIGNING_KEY_ALIAS`, `ORANGE_SIGNING_KEY_PASSWORD`). Sem esses segredos, o build gera um APK sem assinatura de release; não distribua esse artefato como versão final. Gere uma nova chave de upload e guarde uma cópia offline. Como a assinatura mudou, a v1.1 exige desinstalar a v1.0.0 antes da instalação direta; isso apaga os dados locais, portanto faça backup manual do que precisar.
 
 ## 2. Pré-requisitos (para compilar)
 
 | Ferramenta | Versão recomendada |
 |---|---|
 | JDK | 17 |
-| Android SDK | platform 34 + build-tools 34.0.0 |
+| Android SDK | platform 36 + build-tools 36.0.0 |
 | Gradle | 8.7 (via wrapper versionado no repo) |
 
 ## 3. Como buildar
@@ -64,7 +65,7 @@ O build resolve dependências de `google()` e Maven Central; em IPs com rate-lim
 | **Triagem de chamadas** (`ROLE_CALL_SCREENING`) | Diálogo nativo do `RoleManager` (Android 10+). Enquanto o papel não estiver ativo, o sistema não invoca o serviço. | Painel → “Ativar triagem de chamadas” |
 | **Acesso a notificações** (NotificationListenerService) | `Configurações → Acesso a notificações` (`ACTION_NOTIFICATION_LISTENER_SETTINGS`). | Painel / WhatsApp → “Permitir acesso a notificações” |
 | **Notificações do app** (`POST_NOTIFICATIONS`, Android 13+) | Diálogo de runtime. Sem ela os alertas de bloqueio ficam silenciados (a triagem continua funcionando). | Painel → “Conceder permissão de notificações” |
-| `READ_PHONE_STATE` / `READ_CALL_LOG` | Declaradas no manifesto para cenários de integração futura (registro de chamadas). | — |
+| `READ_CALL_LOG` / `READ_PHONE_STATE` | Não são declaradas na v1.1: não são necessárias para as funções atuais. | — |
 
 ## 5. Arquitetura
 
@@ -79,7 +80,7 @@ android-app/
       └─ java/com/orangeshield/app/
          ├─ EngineProvider.kt               # DI manual (sem Hilt): banco + motores + settings
          ├─ SettingsStore.kt                # EngineSettings persistido em SharedPreferences
-         ├─ data/                           # Room: entidades, DAOs, AppDatabase (v1)
+         ├─ data/                           # Room: entidades, DAOs, AppDatabase + migração (v2)
          ├─ engine/                         # PORTA DOS MOTORES DO CONSOLE WEB
          │  ├─ Normalize.kt                 # espelho de normalize.ts
          │  ├─ SpoofDetector.kt             # espelho de spoof.ts (pipeline de 4 passos)
@@ -92,7 +93,7 @@ android-app/
          ├─ whatsapp/WhatsAppGuardService.kt        # NotificationListenerService
          └─ ui/                             # Compose Material3 (tema laranja escuro)
             ├─ Theme.kt · MainActivity.kt
-            ├─ PainelScreen.kt · AnaliseScreen.kt
+            ├─ PainelScreen.kt · IntelligenceScreen.kt · AnaliseScreen.kt · ObservatoryScreen.kt
             ├─ ListasScreen.kt · WhatsAppScreen.kt
 ```
 

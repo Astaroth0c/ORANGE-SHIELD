@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,11 +58,17 @@ fun ListasScreen() {
         TabRow(selectedTabIndex = tab) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Bloqueados") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Permitidos") })
+            Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Sugestões") })
+            Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("No aparelho") })
         }
         if (tab == 0) {
             BlockedList()
-        } else {
+        } else if (tab == 1) {
             AllowedList()
+        } else if (tab == 2) {
+            HistorySuggestions()
+        } else {
+            NativeBlockedHistory()
         }
     }
 }
@@ -219,7 +227,7 @@ private fun ListRow(
     deleteDescription: String,
     onDelete: () -> Unit
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -247,6 +255,169 @@ private fun ListRow(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = deleteDescription
                 )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun HistorySuggestions() {
+    val dao = EngineProvider.database.historyCandidateDao()
+    val phoneDao = EngineProvider.database.phoneListDao()
+    val scope = rememberCoroutineScope()
+    val candidates by dao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    var search by remember { mutableStateOf("") }
+    var page by remember { mutableIntStateOf(0) }
+    val pageSize = 20
+    val filtered = remember(candidates, search) {
+        if (search.isBlank()) candidates else candidates.filter {
+            val digits = search.filter { ch -> ch.isDigit() }
+            (digits.isNotEmpty() && it.e164.contains(digits)) ||
+                it.suggestedLabel.contains(search, ignoreCase = true)
+        }
+    }
+    val pageCount = ((filtered.size + pageSize - 1) / pageSize).coerceAtLeast(1)
+    val safePage = page.coerceIn(0, pageCount - 1)
+    val visible = filtered.drop(safePage * pageSize).take(pageSize)
+    val listState = rememberLazyListState()
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            Text("Sugestões da varredura", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "Números importados do histórico do aparelho. Nenhum deles é bloqueado automaticamente.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it; page = 0 },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Buscar número ou classificação") }
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("${filtered.size} resultados · página ${safePage + 1}/${pageCount}",
+                    fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(
+                        onClick = { page = 0; scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage > 0
+                    ) { Text("Início") }
+                    OutlinedButton(
+                        onClick = { page = pageCount - 1; scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage < pageCount - 1
+                    ) { Text("Final") }
+                }
+            }
+        }
+        if (filtered.isEmpty()) {
+            item {
+                EmptyHint(if (candidates.isEmpty()) "Faça a varredura na aba Radar para preencher esta lista."
+                    else "Nenhum resultado corresponde à busca.")
+            }
+        }
+        items(visible, key = { it.e164 }) { item ->
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Text(formatPhone(item.e164), fontWeight = FontWeight.SemiBold)
+                    Text(item.suggestedLabel, color = OrangePrimary, fontSize = 12.sp)
+                    Text(
+                        "${item.totalCalls} chamadas · ${item.missedCalls} perdidas · ${item.blockedCalls} já marcadas como bloqueadas no aparelho",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    phoneDao.upsertBlocked(BlockedEntity(item.e164, item.suggestedLabel, System.currentTimeMillis()))
+                                    dao.markReviewed(item.e164)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Bloquear") }
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    phoneDao.upsertAllowed(AllowedEntity(item.e164, null, System.currentTimeMillis()))
+                                    dao.markReviewed(item.e164)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Permitir") }
+                    }
+                }
+            }
+        }
+        if (filtered.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { page = (safePage - 1).coerceAtLeast(0); scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage > 0
+                    ) { Text("Anterior") }
+                    Text("${safePage + 1}/${pageCount}", fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Button(
+                        onClick = { page = (safePage + 1).coerceAtMost(pageCount - 1); scope.launch { listState.animateScrollToItem(0) } },
+                        enabled = safePage < pageCount - 1
+                    ) { Text("Próxima") }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun NativeBlockedHistory() {
+    val candidates by EngineProvider.database.historyCandidateDao()
+        .observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val blocked = candidates.filter { it.blockedCalls > 0 }
+        .sortedByDescending { it.blockedCalls }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        contentPadding = PaddingValues(bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            Text("Registros marcados como bloqueados pelo aparelho", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "Fonte: histórico de chamadas lido pelo Radar. Isso não é a lista completa de bloqueio do Android; alguns fabricantes não registram todos os bloqueios neste histórico.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (blocked.isEmpty()) {
+            item {
+                EmptyHint("Nenhum registro de bloqueio nativo foi encontrado na última varredura. Execute novamente o Radar; o Android pode não expor esses registros neste aparelho.")
+            }
+        }
+        items(blocked, key = { it.e164 }) { item ->
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(formatPhone(item.e164), fontWeight = FontWeight.SemiBold)
+                    Text("${item.blockedCalls} registro(s) marcado(s) como bloqueado(s)",
+                        fontSize = 11.sp, color = OrangePrimary)
+                    Text("Total no histórico: ${item.totalCalls} chamada(s)",
+                        fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }

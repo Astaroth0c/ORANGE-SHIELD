@@ -1,7 +1,9 @@
 package com.orangeshield.app.screening
 
 import android.telecom.Call
+import android.telecom.Connection
 import android.telecom.CallScreeningService
+import android.os.Build
 import com.orangeshield.app.EngineProvider
 import com.orangeshield.app.engine.CallDecision
 import com.orangeshield.app.notify.Notifier
@@ -37,6 +39,16 @@ class CallScreeningServiceImpl : CallScreeningService() {
             // O handle chega como URI "tel:+5511999998888" — o schemeSpecificPart
             // devolve exatamente "+5511999998888" para o motor normalizar.
             val rawNumber = callDetails.handle?.schemeSpecificPart ?: ""
+            val networkVerificationStatus = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                when (callDetails.callerNumberVerificationStatus) {
+                    Connection.VERIFICATION_STATUS_PASSED -> "PASSED"
+                    Connection.VERIFICATION_STATUS_FAILED -> "FAILED"
+                    Connection.VERIFICATION_STATUS_NOT_VERIFIED -> "NOT_VERIFIED"
+                    else -> null
+                }
+            } else {
+                null
+            }
 
             // A triagem é síncrona: executa com teto de tempo e, em caso de
             // timeout ou erro, a chamada é permitida (fail-open).
@@ -44,7 +56,8 @@ class CallScreeningServiceImpl : CallScreeningService() {
                 withTimeoutOrNull(SCREENING_TIMEOUT_MS) {
                     EngineProvider.callEngine.analyzeIncomingCall(
                         rawNumber,
-                        EngineProvider.settingsStore.load()
+                        EngineProvider.settingsStore.load(),
+                        callerVerificationStatus = networkVerificationStatus
                     )
                 }
             }
@@ -57,6 +70,18 @@ class CallScreeningServiceImpl : CallScreeningService() {
                 .setSkipNotification(block) // sem notificação nativa quando o app já alerta
                 .build()
             respondToCall(callDetails, response)
+
+            // ORANGE VOICE: publica o veredito para o assistente de voz
+            // (chamadas não bloqueadas tocam — o assistente anuncia e escuta comandos).
+            if (!block) {
+                com.orangeshield.app.voice.RingingCallState.onScreened(
+                    number = analysis?.e164?.takeIf { it.isNotEmpty() } ?: rawNumber.takeIf { it.isNotBlank() },
+                    decision = analysis?.decision?.name,
+                    reputationFlagged = (analysis?.riskScore ?: 0) >= 55 ||
+                        (analysis?.category in setOf("golpe_confirmado", "fraude_confirmada", "spam", "spoofing", "nuisance")),
+                    allowed = false
+                )
+            }
 
             when (analysis?.decision) {
                 CallDecision.BLOCK -> Notifier.postCallAlert(

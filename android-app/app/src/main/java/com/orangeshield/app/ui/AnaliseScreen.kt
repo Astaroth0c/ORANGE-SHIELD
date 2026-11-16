@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -46,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.orangeshield.app.EngineProvider
+import com.orangeshield.app.data.CallEventEntity
 import com.orangeshield.app.engine.CallAnalysis
 import com.orangeshield.app.engine.CallDecision
 import com.orangeshield.app.engine.EngineEvidence
@@ -55,9 +55,13 @@ import com.orangeshield.app.engine.SpoofCheck
 import com.orangeshield.app.engine.SpoofStatus
 import com.orangeshield.app.engine.SpoofStepResult
 import com.orangeshield.app.engine.riskBand
+import com.orangeshield.app.engine.normalizePhoneDetailed
+import com.orangeshield.app.engine.parseBrazilNumber
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.DateFormat
+import java.util.Date
 
 /**
  * ORANGE SHIELD — aba Análise.
@@ -72,15 +76,16 @@ import kotlinx.coroutines.withContext
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AnaliseScreen() {
+fun AnaliseScreen(initialNumber: String = "") {
     val scope = rememberCoroutineScope()
     val store = EngineProvider.settingsStore
 
-    var number by remember { mutableStateOf("") }
+    var number by remember(initialNumber) { mutableStateOf(initialNumber) }
     var loading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var result by remember { mutableStateOf<CallAnalysis?>(null) }
     var spoof by remember { mutableStateOf<SpoofAnalysis?>(null) }
+    var historicalEvents by remember { mutableStateOf<List<CallEventEntity>>(emptyList()) }
 
     Column(
         modifier = Modifier
@@ -130,8 +135,15 @@ fun AnaliseScreen() {
                             )
                         }
                         val spoofAnalysis = withContext(Dispatchers.Default) {
-                            EngineProvider.spoofDetector.analyzeSpoofing(analysis.e164, settings.ownNumber)
+                            if (normalizePhoneDetailed(number).isValid) {
+                                EngineProvider.spoofDetector.analyzeSpoofing(analysis.e164, settings.ownNumber)
+                            } else {
+                                null
+                            }
                         }
+                        historicalEvents = if (analysis.e164.isNotBlank()) {
+                            withContext(Dispatchers.IO) { EngineProvider.database.callEventDao().findRecentByE164(analysis.e164) }
+                        } else emptyList()
                         result = analysis
                         spoof = spoofAnalysis
                     } catch (e: Exception) {
@@ -152,21 +164,34 @@ fun AnaliseScreen() {
         }
 
         result?.let { analysis ->
-            DecisionBadge(decision = analysis.decision)
+            Row(modifier = Modifier.entrance(0), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                DecisionBadge(decision = analysis.decision)
+            }
 
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Risco: ${analysis.riskScore}/100 — ${riskBand(analysis.riskScore)}",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                LinearProgressIndicator(
-                    progress = { analysis.riskScore / 100f },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp),
-                    trackColor = DarkSurfaceVariant
-                )
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("ORANGE ORCHESTRATOR · REGRAS EXPLICÁVEIS", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(analysis.reason, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    val recommendation = when (analysis.decision) {
+                        CallDecision.ALLOW -> "Nenhum sinal atingiu o limiar atual. Isso não comprova a identidade; não compartilhe códigos ou dados sensíveis."
+                        CallDecision.WARN -> "Atenda com cautela, se desejar. Não informe senhas, códigos ou dados bancários; confirme a empresa por um canal oficial."
+                        CallDecision.SILENCE -> "A chamada foi silenciada pela política ativa. Revise o histórico antes de liberar o identificador."
+                        CallDecision.BLOCK -> "A chamada foi bloqueada por regras ativas. Revise as evidências antes de adicionar exceções."
+                    }
+                    Text(recommendation, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                    Text("Decisão determinística no aparelho: combina regras, reputação e sinais disponíveis; não usa IA generativa nem consulta uma nuvem.", color = MutedOnDark, fontSize = 10.sp)
+                }
+            }
+
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth().entrance(1)) {
+                Column(
+                    modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("SCORE DE RISCO", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    RiskGauge(score = analysis.riskScore, band = riskBand(analysis.riskScore))
+                }
             }
 
             Text(
@@ -176,12 +201,65 @@ fun AnaliseScreen() {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            if (analysis.e164.isNotEmpty()) {
+                OrangeLensCard(e164 = analysis.e164, modifier = Modifier.entrance(2))
+            }
+            analysis.phoneNormalization?.let { identity ->
+                OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Text("ORANGE IDENTITY SCAN", color = OrangePrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Recebido: ${identity.raw.ifBlank { "não informado" }}", fontSize = 12.sp)
+                        Text("Canônico: ${identity.e164.ifBlank { "não identificado" }}", fontSize = 12.sp)
+                        parseBrazilNumber(identity.e164)?.let { Text("DDD identificado: ${it.ddd}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        Text(
+                            if (identity.isValid) "Estrutura telefônica validada (${identity.source})"
+                            else "Estrutura não validada — formato sozinho não confirma fraude",
+                            color = if (identity.isValid) EmeraldOk else AmberWarn,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        identity.note?.let { Text(it, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        val networkLabel = when (analysis.callerVerificationStatus) {
+                            "PASSED" -> "STIR/SHAKEN: origem validada pela rede; não garante que a chamada seja segura"
+                            "FAILED" -> "STIR/SHAKEN: falha na validação da origem — sinal de possível spoofing"
+                            "NOT_VERIFIED" -> "STIR/SHAKEN: não verificado — autenticidade desconhecida"
+                            else -> "STIR/SHAKEN: não disponível nesta análise/rede"
+                        }
+                        Text(networkLabel, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("IP, MAC, SIM remoto e processos instalados no aparelho de origem não são expostos ao app pelo Android.", fontSize = 10.sp, color = MutedOnDark)
+                        Text("VoIP/central só será identificado quando houver metadado verificável; prefixo ou ausência de STIR não bastam.", fontSize = 10.sp, color = MutedOnDark)
+                    }
+                }
+            }
             Text(text = analysis.reason, fontSize = 13.sp)
             if (analysis.category != "unknown") {
                 CategoryChip(category = analysis.category)
             }
 
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+
+            if (historicalEvents.isNotEmpty()) {
+                OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("HISTÓRICO DESTE IDENTIFICADOR", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        historicalEvents.take(10).forEach { event ->
+                            Text(
+                                "${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(event.occurredAt))} · ${event.decision} · risco ${event.riskScore}/100",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            if (event.rawNumber.isNotBlank() && event.rawNumber != event.e164) {
+                                Text("Original: ${event.rawNumber}", color = MutedOnDark, fontSize = 10.sp)
+                            }
+                            event.networkVerificationStatus?.let { Text("STIR/SHAKEN: $it", color = MutedOnDark, fontSize = 10.sp) }
+                            Text(event.reason, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                        }
+                    }
+                }
+            }
+            OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -192,7 +270,7 @@ fun AnaliseScreen() {
             }
 
             if (analysis.evidences.isNotEmpty()) {
-                ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -303,7 +381,7 @@ private fun SpoofStepCard(step: SpoofStepResult) {
         SpoofStatus.PASS -> EmeraldOk to "OK"
         SpoofStatus.INFO -> ZincNeutral to "Neutro"
     }
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)

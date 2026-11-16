@@ -44,15 +44,37 @@ class CallRuleEngine(
     suspend fun analyzeIncomingCall(
         rawNumber: String,
         settings: EngineSettings,
-        record: Boolean = true
+        record: Boolean = true,
+        callerVerificationStatus: String? = null
     ): CallAnalysis {
-        val e164 = normalizePhone(rawNumber)
+        val normalization = normalizePhoneDetailed(rawNumber)
+        val e164 = normalization.e164
         val steps = mutableListOf<EngineStep>()
         val evidences = mutableListOf<EngineEvidence>()
         var score = 0
         var category = "unknown"
 
-        steps += EngineStep("Normalizar número", e164.ifEmpty { "inválido" })
+        steps += EngineStep("Identificador recebido (original)", rawNumber.ifEmpty { "não fornecido" })
+        steps += EngineStep("Número canônico (E.164)", e164.ifEmpty { "inválido" })
+        steps += EngineStep("Validação do plano telefônico", if (normalization.isValid) "Estrutura validada (${normalization.source})" else normalization.note ?: "Não foi possível validar o formato")
+        when (callerVerificationStatus) {
+            "PASSED" -> steps += EngineStep(
+                "Autenticação da operadora (STIR/SHAKEN)",
+                "PASSED — a rede validou a origem apresentada; isso não garante que a chamada seja segura"
+            )
+            "FAILED" -> steps += EngineStep(
+                "Autenticação da operadora (STIR/SHAKEN)",
+                "FAILED — a verificação da origem falhou; é um sinal forte de possível caller ID falsificado"
+            )
+            "NOT_VERIFIED" -> steps += EngineStep(
+                "Autenticação da operadora (STIR/SHAKEN)",
+                "NOT_VERIFIED — a rede não forneceu confirmação; resultado desconhecido, não é prova de fraude"
+            )
+            else -> steps += EngineStep(
+                "Autenticação da operadora (STIR/SHAKEN)",
+                "Não disponível neste aparelho/rede ou nesta chamada"
+            )
+        }
 
         // Chave mestra de proteção: motor inativo -> tudo passa.
         if (!settings.protectionActive) {
@@ -65,7 +87,9 @@ class CallRuleEngine(
                 evidences = emptyList(),
                 steps = steps.toList(),
                 reason = "Proteção desativada pelo usuário",
-                ruleVersion = settings.ruleVersion
+                ruleVersion = settings.ruleVersion,
+            phoneNormalization = normalization,
+            callerVerificationStatus = callerVerificationStatus
             )
         }
 
@@ -89,7 +113,9 @@ class CallRuleEngine(
                 evidences = emptyList(),
                 steps = steps.toList(),
                 reason = "Número autorizado na lista de permissões",
-                ruleVersion = settings.ruleVersion
+                ruleVersion = settings.ruleVersion,
+            phoneNormalization = normalization,
+            callerVerificationStatus = callerVerificationStatus
             )
         }
         steps += EngineStep("Lista de autorizados", "Não está autorizado")
@@ -108,7 +134,9 @@ class CallRuleEngine(
                 evidences = listOf(EngineEvidence("Número presente na lista pessoal de bloqueio", 100)),
                 steps = steps.toList(),
                 reason = blocked.label ?: "Número bloqueado manualmente",
-                ruleVersion = settings.ruleVersion
+                ruleVersion = settings.ruleVersion,
+            phoneNormalization = normalization,
+            callerVerificationStatus = callerVerificationStatus
             )
         }
         steps += EngineStep("Lista pessoal de bloqueio", "Sem bloqueio manual")
@@ -128,7 +156,9 @@ class CallRuleEngine(
                 evidences = listOf(EngineEvidence("Número denunciado como golpe (confirmado)", 100)),
                 steps = steps.toList(),
                 reason = "Golpe confirmado na base de reputação",
-                ruleVersion = settings.ruleVersion
+                ruleVersion = settings.ruleVersion,
+            phoneNormalization = normalization,
+            callerVerificationStatus = callerVerificationStatus
             )
         }
         steps += EngineStep(
@@ -149,11 +179,16 @@ class CallRuleEngine(
             score += points
         }
 
+        when (callerVerificationStatus) {
+            "FAILED" -> add("A operadora não validou a origem do identificador (STIR/SHAKEN FAILED)", 45)
+            "PASSED" -> add("Origem do identificador validada pela rede (STIR/SHAKEN PASSED)", -10)
+        }
+
         // ------------------------------------------------------------------
         // 4a. Spoof Detector — manipulação de caller ID (Engine 04)
         // ------------------------------------------------------------------
         val spoofFlags = mutableListOf<SpoofFlag>()
-        if (settings.spoofProtection) {
+        if (settings.spoofProtection && normalization.isValid) {
             val spoof = spoofDetector.analyzeSpoofing(e164, settings.ownNumber)
             val flagged = spoof.checks.filter { it.status == SpoofStatus.FLAGGED }
             spoofFlags += flagged.map { SpoofFlag(code = it.code, label = it.label, points = it.points) }
@@ -174,6 +209,8 @@ class CallRuleEngine(
                     }
                 )
             }
+        } else if (settings.spoofProtection) {
+            steps += EngineStep("Detector de spoofing", "Pontuação suspensa: número não validado; evitar falso positivo por erro de formatação")
         }
 
         // Prefixo 0303 da Anatel (telemarketing)
@@ -285,9 +322,9 @@ class CallRuleEngine(
                 val top = evidences.take(2).joinToString("; ") { it.label }
                 "Risco alto ($score/100): ${top.ifEmpty { "política do usuário" }}"
             }
-            CallDecision.WARN -> "Suspeito ($score/100): exibir identificação na tela"
+            CallDecision.WARN -> "Suspeito ($score/100): ${evidences.take(2).joinToString("; ") { it.label }.ifEmpty { "sinais insuficientes para detalhar" }}"
             CallDecision.SILENCE -> "Modo silêncio total: apenas contatos autorizados tocam"
-            CallDecision.ALLOW -> "Sem indícios de risco — chamada legítima"
+            CallDecision.ALLOW -> "Sem indícios de risco detectados — autenticidade não confirmada"
         }
 
         // ------------------------------------------------------------------
@@ -297,6 +334,8 @@ class CallRuleEngine(
         if (record) {
             recordCallEvent(
                 e164 = e164,
+                rawNumber = rawNumber,
+                callerVerificationStatus = callerVerificationStatus,
                 decision = decision,
                 riskScore = score,
                 category = category,
@@ -315,12 +354,16 @@ class CallRuleEngine(
             evidences = evidences.toList(),
             steps = steps.toList(),
             reason = reason,
-            ruleVersion = settings.ruleVersion
+            ruleVersion = settings.ruleVersion,
+            phoneNormalization = normalization,
+            callerVerificationStatus = callerVerificationStatus
         )
     }
 
     private suspend fun recordCallEvent(
         e164: String,
+        rawNumber: String,
+        callerVerificationStatus: String?,
         decision: CallDecision,
         riskScore: Int,
         category: String,
@@ -333,6 +376,8 @@ class CallRuleEngine(
             db.callEventDao().insert(
                 CallEventEntity(
                     e164 = e164,
+                    rawNumber = rawNumber,
+                    networkVerificationStatus = callerVerificationStatus,
                     decision = decision.name,
                     riskScore = riskScore,
                     category = category.ifEmpty { null },

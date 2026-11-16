@@ -101,6 +101,7 @@ object SpoofWeights {
     const val REPUTATION_FRAUD = 100
     const val REPUTATION_REPORTS = 40
     const val REPUTATION_CLASS = 30
+    const val REPUTATION_NUISANCE = 25
 }
 
 /** DDDs atribuídos pela ANATEL (plano de numeração brasileiro). */
@@ -242,10 +243,10 @@ class SpoofDetector(private val db: AppDatabase) {
             if (dddNum !in VALID_DDDS) {
                 checks += SpoofCheck(
                     code = "INVALID_DDD",
-                    label = "DDD inexistente no Brasil",
-                    detail = "O DDD $ddd não existe no plano de numeração da ANATEL — caller ID sintético",
-                    points = SpoofWeights.INVALID_DDD,
-                    status = SpoofStatus.FLAGGED
+                    label = "DDD não validado",
+                    detail = "O DDD $ddd não consta na lista brasileira carregada. Isso pode indicar formato inconsistente, mas isoladamente não comprova spoofing.",
+                    points = 0,
+                    status = SpoofStatus.INFO
                 )
             } else {
                 checks += SpoofCheck(
@@ -266,10 +267,10 @@ class SpoofDetector(private val db: AppDatabase) {
                 }
                 checks += SpoofCheck(
                     code = "BAD_LENGTH",
-                    label = "Comprimento inválido",
-                    detail = detail,
-                    points = SpoofWeights.BAD_LENGTH,
-                    status = SpoofStatus.FLAGGED
+                    label = "Comprimento fora do padrão",
+                    detail = "$detail. O formato isolado não confirma fraude.",
+                    points = 0,
+                    status = SpoofStatus.INFO
                 )
             } else {
                 checks += SpoofCheck(
@@ -662,6 +663,13 @@ class SpoofDetector(private val db: AppDatabase) {
                 label = "Classificado como ${rep.classification}",
                 detail = "A base de reputação associa este número a disparos automáticos/telemarketing",
                 points = SpoofWeights.REPUTATION_CLASS,
+                status = SpoofStatus.FLAGGED
+            )
+            "nuisance" -> checks += SpoofCheck(
+                code = "REPUTATION_NUISANCE",
+                label = "Incômodo recorrente",
+                detail = "Histórico real mostra volume alto de chamadas recusadas/não atendidas — padrão de robocall/Wangiri",
+                points = SpoofWeights.REPUTATION_NUISANCE,
                 status = SpoofStatus.FLAGGED
             )
             "verified_business" -> checks += SpoofCheck(

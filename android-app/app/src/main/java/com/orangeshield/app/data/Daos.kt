@@ -21,6 +21,9 @@ interface CallEventDao {
     @Query("SELECT * FROM call_events WHERE e164 = :e164")
     suspend fun findByE164(e164: String): List<CallEventEntity>
 
+    @Query("SELECT * FROM call_events WHERE e164 = :e164 ORDER BY occurredAt DESC LIMIT 50")
+    suspend fun findRecentByE164(e164: String): List<CallEventEntity>
+
     @Query("SELECT * FROM call_events WHERE e164 = :e164 ORDER BY occurredAt DESC LIMIT 1")
     suspend fun findLatestByE164(e164: String): CallEventEntity?
 
@@ -110,12 +113,12 @@ interface WhatsAppEventDao {
     @Query("SELECT * FROM whatsapp_events WHERE sender = :sender")
     suspend fun findBySender(sender: String): List<WhatsAppEventEntity>
 
-    /** Deduplicação: quantos eventos idênticos (remetente + texto) desde [since]. */
+    /** Deduplicação por fingerprint SHA-256; o texto original não é persistido. */
     @Query(
         "SELECT COUNT(*) FROM whatsapp_events " +
-            "WHERE sender = :sender AND content = :content AND occurredAt >= :since"
+            "WHERE sender = :sender AND content = :fingerprint AND occurredAt >= :since"
     )
-    suspend fun countRecent(sender: String, content: String, since: Long): Int
+    suspend fun countRecent(sender: String, fingerprint: String, since: Long): Int
 
     @Query("SELECT * FROM whatsapp_events ORDER BY occurredAt DESC LIMIT :limit")
     fun listRecent(limit: Int): Flow<List<WhatsAppEventEntity>>
