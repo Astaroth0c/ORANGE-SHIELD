@@ -63,6 +63,8 @@ data class EngineSettings(
     val insistenceProtection: Boolean = true,
     // Bloqueio automático de insistência/incômodo recorrente
     val autoBlockNuisance: Boolean = true,
+    // MODO AGRESSIVO: bloqueia na hora qualquer número que ligar 2+ vezes em 24h
+    val aggressiveBlock: Boolean = false,
     // ORANGE VOICE (assistente de chamadas por voz)
     val voiceAssistant: Boolean = false,
     // WhatsApp Guard (Engine 03)

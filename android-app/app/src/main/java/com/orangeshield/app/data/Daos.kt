@@ -91,6 +91,12 @@ interface PhoneListDao {
     @Query("SELECT * FROM allowed_numbers WHERE e164 = :e164")
     suspend fun findAllowed(e164: String): AllowedEntity?
 
+    @Query("SELECT * FROM blocked_numbers WHERE e164 = :e164")
+    fun observeBlocked(e164: String): Flow<BlockedEntity?>
+
+    @Query("SELECT * FROM allowed_numbers WHERE e164 = :e164")
+    fun observeAllowed(e164: String): Flow<AllowedEntity?>
+
     @Query("SELECT * FROM blocked_numbers ORDER BY createdAt DESC")
     fun listBlocked(): Flow<List<BlockedEntity>>
 

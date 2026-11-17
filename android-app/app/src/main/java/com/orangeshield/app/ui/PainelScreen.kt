@@ -344,6 +344,38 @@ fun PainelScreen() {
                         }
                     )
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("MODO AGRESSIVO", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = RedBlock)
+                        Text(
+                            "Qualquer número que ligar 2+ vezes em 24h é BLOQUEADO na hora, sem perguntar. Contatos liberados nunca são afetados.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = settings.aggressiveBlock,
+                        onCheckedChange = { checked ->
+                            scope.launch { store.save(settings.copy(aggressiveBlock = checked)) }
+                        }
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Bloquear números desconhecidos", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "Bloqueia TODO número sem reputação local — o escudo mais duro.",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = settings.blockUnknownNumbers,
+                        onCheckedChange = { checked ->
+                            scope.launch { store.save(settings.copy(blockUnknownNumbers = checked)) }
+                        }
+                    )
+                }
                 roleStatusMessage?.let {
                     Text(it, fontSize = 12.sp, color = OrangePrimary)
                 }

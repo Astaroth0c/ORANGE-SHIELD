@@ -298,6 +298,38 @@ class CallRuleEngine(
         steps += EngineStep("Pontuação de risco", "$score/100 — ${riskBand(score)}")
 
         // ------------------------------------------------------------------
+        // MODO AGRESSIVO: bloqueia na hora qualquer número que insistir em 24h
+        // (a lista de autorizados já foi tratada antes — nunca bloqueia contato
+        // liberado; a lista negra também já bloqueou antes de chegar aqui)
+        // ------------------------------------------------------------------
+        if (settings.aggressiveBlock) {
+            val dayAgo = System.currentTimeMillis() - AGGRESSIVE_WINDOW_MS
+            val recent24h = db.callEventDao().countInWindow(e164, dayAgo)
+            if (recent24h >= AGGRESSIVE_MIN_CALLS) {
+                val motivo = "Modo agressivo: $recent24h chamadas nas últimas 24h — bloqueado sem perguntar"
+                steps += EngineStep("Modo agressivo de bloqueio", motivo)
+                return CallAnalysis(
+                    e164 = e164,
+                    decision = CallDecision.BLOCK,
+                    riskScore = maxOf(score, 85),
+                    category = "insistence",
+                    evidences = listOf(EngineEvidence(motivo, 85)),
+                    steps = steps.toList(),
+                    reason = motivo,
+                    ruleVersion = settings.ruleVersion,
+                    phoneNormalization = normalization,
+                    callerVerificationStatus = callerVerificationStatus
+                )
+            }
+            if (recent24h > 0) {
+                steps += EngineStep(
+                    "Modo agressivo de bloqueio",
+                    "$recent24h chamada(s) em 24h — bloqueia a partir de $AGGRESSIVE_MIN_CALLS"
+                )
+            }
+        }
+
+        // ------------------------------------------------------------------
         // Bloqueio automático de insistência/incômodo (quando ativado)
         // ------------------------------------------------------------------
         if (settings.autoBlockNuisance) {
@@ -451,6 +483,10 @@ class CallRuleEngine(
 
         /** Bloqueio automático: chamadas na última hora que disparam o bloqueio. */
         const val AUTO_BLOCK_INSISTENCE_COUNT = 5
+
+        /** Modo agressivo: janela de 24h e mínimo de chamadas para bloquear. */
+        const val AGGRESSIVE_WINDOW_MS = 24L * 60L * 60L * 1000L
+        const val AGGRESSIVE_MIN_CALLS = 2
 
         /** Nível mínimo de reputação "nuisance" para bloqueio automático. */
         const val NUISANCE_BLOCK_LEVEL = 60

@@ -202,7 +202,8 @@ fun AnaliseScreen(initialNumber: String = "") {
                 overflow = TextOverflow.Ellipsis
             )
             if (analysis.e164.isNotEmpty()) {
-                OrangeLensCard(e164 = analysis.e164, modifier = Modifier.entrance(2))
+                NumberActionButtons(e164 = analysis.e164, modifier = Modifier.entrance(2))
+                OrangeLensCard(e164 = analysis.e164, modifier = Modifier.entrance(3))
             }
             analysis.phoneNormalization?.let { identity ->
                 OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {

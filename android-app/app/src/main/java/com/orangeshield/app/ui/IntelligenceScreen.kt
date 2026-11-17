@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -51,7 +52,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.widget.Toast
 import com.orangeshield.app.EngineProvider
+import com.orangeshield.app.data.BlockedEntity
 import com.orangeshield.app.engine.detectCampaigns
 import com.orangeshield.app.history.CallHistoryScanner
 import kotlinx.coroutines.launch
@@ -62,7 +65,11 @@ import java.util.Date
 fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
     val context = LocalContext.current
     val dao = EngineProvider.database.historyCandidateDao()
+    val phoneDao = EngineProvider.database.phoneListDao()
     val candidates by dao.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val blockedSet by remember { phoneDao.listBlocked() }
+        .collectAsStateWithLifecycle(initialValue = emptyList<BlockedEntity>())
+    val blockedE164s = remember(blockedSet) { blockedSet.map { it.e164 }.toSet() }
     val callEvents by EngineProvider.database.callEventDao().listRecent(500).collectAsStateWithLifecycle(initialValue = emptyList())
     val campaignFindings = remember(callEvents) { detectCampaigns(callEvents) }
     val scope = rememberCoroutineScope()
@@ -332,6 +339,34 @@ fun IntelligenceScreen(onAnalyzeNumber: (String) -> Unit = {}) {
                             Text(if (item.totalCalls >= 8) "ALTA\nRECORRÊNCIA" else "HISTÓRICO",
                                 color = if (item.totalCalls >= 8) OrangePrimary else MutedOnDark,
                                 fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            if (item.e164 in blockedE164s) {
+                                Button(
+                                    onClick = {
+                                        scope.launch {
+                                            phoneDao.deleteBlocked(item.e164)
+                                            Toast.makeText(context, "Desbloqueado: ${item.e164}", Toast.LENGTH_LONG).show()
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = ZincNeutral, contentColor = Color.White)
+                                ) { Text("Desbloquear") }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        scope.launch {
+                                            phoneDao.deleteAllowed(item.e164)
+                                            phoneDao.upsertBlocked(
+                                                BlockedEntity(item.e164, "Bloqueado no Radar", System.currentTimeMillis())
+                                            )
+                                            Toast.makeText(
+                                                context,
+                                                "BLOQUEADO: ${item.e164} — próximas chamadas serão recusadas.",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = RedBlock, contentColor = Color.White)
+                                ) { Text("Bloquear") }
+                            }
                             OutlinedButton(onClick = { onAnalyzeNumber(item.e164) }) { Text("Analisar") }
                         }
                     }
