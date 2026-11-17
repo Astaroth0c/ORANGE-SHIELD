@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "chainId": "orange-chain-cambira-pr",
+  "updatedAt": "2026-11-17T14:40:00Z",
+  "maintainer": "Astaroth0c",
+  "consensus": "Cada bloco referencia o hash SHA-256 do anterior; entradas sao assinadas com ECDSA P-256 pelo aparelho de origem; todo no ORANGE SHIELD e o validador em CI verificam gênese, encadeamento, merkleRoot e assinaturas antes de aceitar.",
+  "blocks": [
+    {
+      "index": 0,
+      "timestamp": 1794873600000,
+      "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "merkleRoot": "8593680730c5add545b95543c665d81b2634e6ac03fc5f06a0f1b34ec4b4a7ab",
+      "publisher": "ORANGE-GENESIS",
+      "entries": []
+    }
+  ]
+}

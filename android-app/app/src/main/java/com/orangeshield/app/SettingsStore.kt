@@ -45,6 +45,8 @@ class SettingsStore(context: Context) {
             insistenceProtection = prefs.getBoolean(KEY_INSISTENCE_PROTECTION, defaults.insistenceProtection),
             autoBlockNuisance = prefs.getBoolean(KEY_AUTO_BLOCK_NUISANCE, defaults.autoBlockNuisance),
             aggressiveBlock = prefs.getBoolean(KEY_AGGRESSIVE_BLOCK, defaults.aggressiveBlock),
+            chainShare = prefs.getBoolean(KEY_CHAIN_SHARE, defaults.chainShare),
+            chainMesh = prefs.getBoolean(KEY_CHAIN_MESH, defaults.chainMesh),
             voiceAssistant = prefs.getBoolean(KEY_VOICE_ASSISTANT, defaults.voiceAssistant),
             waProtect = prefs.getBoolean(KEY_WA_PROTECT, defaults.waProtect),
             waBlockUnknown = prefs.getBoolean(KEY_WA_BLOCK_UNKNOWN, defaults.waBlockUnknown),
@@ -75,6 +77,8 @@ class SettingsStore(context: Context) {
             .putBoolean(KEY_INSISTENCE_PROTECTION, settings.insistenceProtection)
             .putBoolean(KEY_AUTO_BLOCK_NUISANCE, settings.autoBlockNuisance)
             .putBoolean(KEY_AGGRESSIVE_BLOCK, settings.aggressiveBlock)
+            .putBoolean(KEY_CHAIN_SHARE, settings.chainShare)
+            .putBoolean(KEY_CHAIN_MESH, settings.chainMesh)
             .putBoolean(KEY_VOICE_ASSISTANT, settings.voiceAssistant)
             .putBoolean(KEY_WA_PROTECT, settings.waProtect)
             .putBoolean(KEY_WA_BLOCK_UNKNOWN, settings.waBlockUnknown)
@@ -106,6 +110,8 @@ class SettingsStore(context: Context) {
         const val KEY_INSISTENCE_PROTECTION = "insistenceProtection"
         const val KEY_AUTO_BLOCK_NUISANCE = "autoBlockNuisance"
         const val KEY_AGGRESSIVE_BLOCK = "aggressiveBlock"
+        const val KEY_CHAIN_SHARE = "chainShare"
+        const val KEY_CHAIN_MESH = "chainMesh"
         const val KEY_VOICE_ASSISTANT = "voiceAssistant"
         const val KEY_WA_PROTECT = "waProtect"
         const val KEY_WA_BLOCK_UNKNOWN = "waBlockUnknown"

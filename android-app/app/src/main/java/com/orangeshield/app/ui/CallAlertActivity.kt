@@ -250,6 +250,9 @@ private fun CallAlertContent(initialNumber: String?) {
                                             createdAt = System.currentTimeMillis()
                                         )
                                     )
+                                    if (EngineProvider.settingsStore.current.chainShare) {
+                                        runCatching { com.orangeshield.app.chain.ChainNode.onUserBlocked(context.applicationContext, e164) }
+                                    }
                                 }
                             }
                         }

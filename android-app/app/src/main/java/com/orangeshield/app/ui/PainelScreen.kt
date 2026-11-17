@@ -35,6 +35,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -382,6 +383,11 @@ fun PainelScreen() {
             }
         }
 
+        // ---- ORANGE CHAIN — cadeia comunitária de números restritos ----
+        OrangeChainCard(settings = settings, onSettingsChange = { next ->
+            scope.launch { store.save(next) }
+        })
+
         // ---- Estatísticas ----
         Row(modifier = Modifier.entrance(1), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard(label = "Triagens", value = total, modifier = Modifier.weight(1f))
@@ -715,6 +721,140 @@ private fun VoiceAssistantCard() {
                 "Limitações reais do Android: atender por voz usa a tecla de headset (melhor esforço, varia por fabricante); no Android 14+ o microfone em segundo plano pode ser restringido pelo sistema — o anúncio por voz continua funcionando.",
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * ORANGE CHAIN — card do nó local na cadeia comunitária.
+ * Mostra altura da cadeia, denúncias pendentes, ID pseudônimo do nó,
+ * sincronização (repositório + mesh local) e publicação de bloco assinado.
+ */
+@Composable
+private fun OrangeChainCard(settings: com.orangeshield.app.engine.EngineSettings, onSettingsChange: (com.orangeshield.app.engine.EngineSettings) -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var chainHeight by remember { mutableStateOf<Long?>(null) }
+    var pending by remember { mutableStateOf<Int?>(null) }
+    var nodeId by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        runCatching {
+            com.orangeshield.app.chain.ChainNode.ensureGenesis(context)
+            nodeId = com.orangeshield.app.chain.ChainNode.nodeId(context)
+            chainHeight = com.orangeshield.app.chain.ChainNode.localHeight(context)
+            pending = com.orangeshield.app.chain.ChainNode.pendingCount(context)
+        }
+    }
+
+    fun refresh() {
+        scope.launch {
+            runCatching {
+                chainHeight = com.orangeshield.app.chain.ChainNode.localHeight(context)
+                pending = com.orangeshield.app.chain.ChainNode.pendingCount(context)
+            }
+        }
+    }
+
+    OrangeGlassCard(modifier = Modifier.fillMaxWidth().entrance(1)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("ORANGE CHAIN · CADEIA COMUNITÁRIA", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text("Bloqueios compartilhados entre aparelhos", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
+                Text("NÓ ${nodeId.ifEmpty { "…" }}", color = MutedOnDark, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                Column {
+                    Text("${chainHeight?.let { if (it >= 0) it.toString() else "0" } ?: "…"}", color = OrangePrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("altura da cadeia", color = MutedOnDark, fontSize = 9.sp)
+                }
+                Column {
+                    Text("${pending ?: "…"}", color = AmberWarn, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("denúncias pendentes", color = MutedOnDark, fontSize = 9.sp)
+                }
+            }
+            Text(
+                "Cada bloqueio seu vira uma denúncia assinada (ECDSA P-256, pseudônima) dentro de um bloco encadeado por SHA-256. Todo aparelho valida a cadeia inteira (gênese, encadeamento, Merkle, assinaturas) antes de restringir o número — o que você bloqueia passa a proteger os outros nós, e vice-versa.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Compartilhar bloqueios com a rede", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Assinado e pseudônimo — nunca envia contatos nem seu número.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.chainShare,
+                    onCheckedChange = { checked -> onSettingsChange(settings.copy(chainShare = checked)) }
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Mesh local (mesma rede Wi-Fi)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Troca direta de cadeia entre aparelhos ORANGE SHIELD na mesma rede.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = settings.chainMesh,
+                    onCheckedChange = { checked -> onSettingsChange(settings.copy(chainMesh = checked)) }
+                )
+            }
+            Button(
+                onClick = {
+                    scope.launch {
+                        busy = true
+                        status = "Sincronizando e validando a cadeia…"
+                        runCatching {
+                            com.orangeshield.app.chain.ChainNode.ensureGenesis(context)
+                            val pull = com.orangeshield.app.chain.ChainTransport.pull(context)
+                            var msg = pull.message
+                            if (settings.chainMesh) {
+                                val mesh = com.orangeshield.app.chain.ChainTransport.meshSync(context)
+                                msg += "\nMesh: ${mesh.message}"
+                            }
+                            status = msg
+                        }.onFailure { status = "Falha na sincronização: ${it.message ?: "erro"}" }
+                        refresh()
+                        busy = false
+                    }
+                },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (busy) "VALIDANDO CADEIA…" else "SINCRONIZAR COM A REDE", fontWeight = FontWeight.Bold)
+            }
+            Button(
+                onClick = {
+                    scope.launch {
+                        busy = true
+                        runCatching {
+                            val pub = com.orangeshield.app.chain.ChainTransport.publishLocalBlock(context)
+                            status = pub.message
+                            pub.issueUrl?.let { url ->
+                                com.orangeshield.app.chain.ChainTransport.openIssuePage(context, url)
+                                com.orangeshield.app.chain.ChainNode.clearPending(context)
+                            }
+                        }.onFailure { status = "Falha ao montar o bloco: ${it.message ?: "erro"}" }
+                        refresh()
+                        busy = false
+                    }
+                },
+                enabled = !busy && (pending ?: 0) > 0,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("PUBLICAR ${pending ?: 0} DENÚNCIA(S) ASSINADA(S)", fontWeight = FontWeight.Bold)
+            }
+            status?.let {
+                Text(it, fontSize = 12.sp, color = OrangePrimary)
+            }
+            Text(
+                "Infraestrutura comunitária real: a cadeia vive no repositório (distribuição anônima), o Actions da comunidade empacota blocos validando assinaturas, e aparelhos na mesma rede Wi-Fi trocam blocos direto (mesh). Sem a triagem ativa, os bloqueios da rede não chegam a recusar chamadas — ative o STATUS DO ESCUDO acima.",
+                fontSize = 10.sp,
+                color = MutedOnDark
             )
         }
     }

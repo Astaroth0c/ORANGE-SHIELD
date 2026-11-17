@@ -65,6 +65,11 @@ data class EngineSettings(
     val autoBlockNuisance: Boolean = true,
     // MODO AGRESSIVO: bloqueia na hora qualquer número que ligar 2+ vezes em 24h
     val aggressiveBlock: Boolean = false,
+    // ORANGE CHAIN — cadeia comunitária de números restritos
+    // Compartilha bloqueios (assinados, pseudônimos) e aceita denúncias da rede
+    val chainShare: Boolean = true,
+    // Mesh local: troca direta de cadeia entre aparelhos na mesma rede Wi-Fi
+    val chainMesh: Boolean = true,
     // ORANGE VOICE (assistente de chamadas por voz)
     val voiceAssistant: Boolean = false,
     // WhatsApp Guard (Engine 03)

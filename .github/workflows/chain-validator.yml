@@ -1,0 +1,53 @@
+name: ORANGE CHAIN Validator
+
+# Infraestrutura comunitária da cadeia: valida blocos assinados enviados
+# como issues (ECDSA P-256 + encadeamento + Merkle) e os anexa a
+# community/chain.json. Auditorável por qualquer pessoa.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: orange-chain
+  cancel-in-progress: false
+
+jobs:
+  validate-and-append:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install cryptography
+        run: pip install cryptography
+
+      - name: Validate chain and append signed blocks
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python community/chain_validator.py
+
+      - name: Commit updated chain
+        run: |
+          if git diff --quiet community/chain.json community/reputation-feed.json 2>/dev/null; then
+            echo "Cadeia sem alterações."
+          else
+            git config user.name "orange-chain-bot"
+            git config user.email "Astaroth0c@users.noreply.github.com"
+            git add community/chain.json community/reputation-feed.json
+            git commit -m "chain: blocos validados e anexados (consenso ORANGE CHAIN)"
+            git pull --rebase origin "${GITHUB_REF_NAME}" || true
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

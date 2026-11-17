@@ -107,6 +107,10 @@ fun NumberActionButtons(e164: String, modifier: Modifier = Modifier) {
                                 createdAt = System.currentTimeMillis()
                             )
                         )
+                        // ORANGE CHAIN: enfileira denúncia assinada para a rede (se compartilhamento ativo)
+                        if (EngineProvider.settingsStore.current.chainShare) {
+                            runCatching { com.orangeshield.app.chain.ChainNode.onUserBlocked(context, e164) }
+                        }
                         Toast.makeText(
                             context,
                             "BLOQUEADO: $e164 — as próximas chamadas deste número serão recusadas.",

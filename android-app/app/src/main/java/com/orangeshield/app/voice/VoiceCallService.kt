@@ -290,6 +290,9 @@ class VoiceCallService : Service(), RecognitionListener {
                     createdAt = System.currentTimeMillis()
                 )
             )
+            if (EngineProvider.settingsStore.current.chainShare) {
+                runCatching { com.orangeshield.app.chain.ChainNode.onUserBlocked(this@VoiceCallService, number) }
+            }
         }
     }
 

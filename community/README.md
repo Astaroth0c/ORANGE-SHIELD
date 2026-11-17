@@ -39,3 +39,19 @@ do Call Guard em chamadas reais.
 - Somente números e classificações — **nunca** nomes, endereços, CPF ou dados cadastrais.
 - Toda entrada precisa citar a issue de origem no commit.
 - O mantenedor pode remover entradas contestadas (basta abrir issue pedindo revisão).
+
+---
+
+## ORANGE CHAIN — cadeia comunitária de números restritos (v2.10.0)
+
+Cada aparelho ORANGE SHIELD é um **nó completo** da rede. Sem servidor dedicado:
+
+- **Estrutura**: blockchain real — blocos encadeados por SHA-256, Merkle root das denúncias, cada denúncia assinada com ECDSA P-256 pela chave do aparelho (pseudônima: `reporterId` = SHA-256 da chave pública).
+- **Gênese**: determinístico e canônico (`GENESIS_HASH` = `78c5e9d3...c05c5b4e`) — idêntico no app, no repositório e em todos os nós.
+- **Distribuição**: `community/chain.json` (leitura anônima por todos os nós via raw).
+- **Publicação**: nó monta bloco local assinado → issue com label `orange-chain` → o validador comunitário (CI) verifica encadeamento + Merkle + assinaturas ECDSA e anexa o bloco.
+- **Consenso local**: todo nó valida a cadeia INTEIRA antes de aceitar (gênese canônico, encadeamento, Merkle, assinatura de cada entrada). Cadeia adulterada é rejeitada e reportada.
+- **Mesh local**: aparelhos na mesma rede Wi-Fi trocam a cadeia direto (NSD `_orangeshield._tcp` + TCP 47615), sempre passando pelo consenso local.
+- **Efeito real**: denúncias aceitas são espelhadas na reputação local → o número passa a ser bloqueado/alertado nos outros aparelhos.
+
+Auditoria: qualquer pessoa pode recomputar hashes e verificar assinaturas (`chain_validator.py` usa o mesmo algoritmo canônico do app).

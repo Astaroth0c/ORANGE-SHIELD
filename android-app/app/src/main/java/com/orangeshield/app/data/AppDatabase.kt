@@ -20,9 +20,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         AllowedEntity::class,
         WhatsAppEventEntity::class,
         HistoryCandidateEntity::class,
-        CommunityReportEntity::class
+        CommunityReportEntity::class,
+        ChainBlockEntity::class,
+        ChainPendingEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -32,6 +34,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun whatsappEventDao(): WhatsAppEventDao
     abstract fun historyCandidateDao(): HistoryCandidateDao
     abstract fun communityReportDao(): CommunityReportDao
+    abstract fun chainBlockDao(): ChainBlockDao
+    abstract fun chainPendingDao(): ChainPendingDao
 }
 
 /**
@@ -70,6 +74,29 @@ private val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+private val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            "CREATE TABLE IF NOT EXISTS chain_blocks (" +
+                "`index` INTEGER NOT NULL PRIMARY KEY, " +
+                "hash TEXT NOT NULL, " +
+                "prevHash TEXT NOT NULL, " +
+                "merkleRoot TEXT NOT NULL, " +
+                "timestamp INTEGER NOT NULL, " +
+                "publisher TEXT NOT NULL, " +
+                "payloadJson TEXT NOT NULL, " +
+                "receivedAt INTEGER NOT NULL)"
+        )
+        database.execSQL(
+            "CREATE TABLE IF NOT EXISTS chain_pending (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "e164 TEXT NOT NULL, " +
+                "classification TEXT NOT NULL, " +
+                "createdAt INTEGER NOT NULL)"
+        )
+    }
+}
+
 object DatabaseProvider {
 
     @Volatile
@@ -81,6 +108,6 @@ object DatabaseProvider {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "orange_shield.db"
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { instance = it }
         }
 }

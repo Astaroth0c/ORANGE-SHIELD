@@ -128,6 +128,13 @@ fun OrangeShieldApp() {
                 com.orangeshield.app.osint.OrangeLens.syncCommunityFeed(context.applicationContext)
             }
         }
+        // ORANGE CHAIN: puxa e valida a cadeia comunitária (silencioso, com consenso local).
+        launch {
+            runCatching {
+                com.orangeshield.app.chain.ChainNode.ensureGenesis(context.applicationContext)
+                com.orangeshield.app.chain.ChainTransport.pull(context.applicationContext)
+            }
+        }
     }
 
     Scaffold(
