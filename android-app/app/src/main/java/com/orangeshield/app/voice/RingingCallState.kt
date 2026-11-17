@@ -29,6 +29,10 @@ object RingingCallState {
     @Volatile
     var voiceEnabled: Boolean = false
 
+    /** Evita anúncio duplicado (serviço + fallback do receiver). */
+    @Volatile
+    var announced: Boolean = false
+
     fun onScreened(number: String?, decision: String?, reputationFlagged: Boolean, allowed: Boolean) {
         ringingNumber = number
         screeningDecision = decision
@@ -41,5 +45,6 @@ object RingingCallState {
         screeningDecision = null
         reputationFlagged = false
         isAllowedContact = false
+        announced = false
     }
 }

@@ -298,6 +298,42 @@ class CallRuleEngine(
         steps += EngineStep("Pontuação de risco", "$score/100 — ${riskBand(score)}")
 
         // ------------------------------------------------------------------
+        // Bloqueio automático de insistência/incômodo (quando ativado)
+        // ------------------------------------------------------------------
+        if (settings.autoBlockNuisance) {
+            val oneHourAgo = System.currentTimeMillis() - 60L * 60L * 1000L
+            val recent = db.callEventDao().countInWindow(e164, oneHourAgo)
+            val nuisanceConfirmed = reputation?.classification == "nuisance" &&
+                (reputation?.riskScore ?: 0) >= NUISANCE_BLOCK_LEVEL
+            if (recent >= AUTO_BLOCK_INSISTENCE_COUNT || nuisanceConfirmed) {
+                val motivo = if (recent >= AUTO_BLOCK_INSISTENCE_COUNT) {
+                    "Bloqueio automático: $recent chamadas na última hora"
+                } else {
+                    "Bloqueio automático: incômodo recorrente confirmado (risco ${reputation?.riskScore})"
+                }
+                steps += EngineStep("Bloqueio automático de insistência", motivo)
+                return CallAnalysis(
+                    e164 = e164,
+                    decision = CallDecision.BLOCK,
+                    riskScore = maxOf(score, 90),
+                    category = if (nuisanceConfirmed) "nuisance" else "insistence",
+                    evidences = listOf(EngineEvidence(motivo, 90)),
+                    steps = steps.toList(),
+                    reason = motivo,
+                    ruleVersion = settings.ruleVersion,
+                    phoneNormalization = normalization,
+                    callerVerificationStatus = callerVerificationStatus
+                )
+            }
+            if (recent > 0) {
+                steps += EngineStep(
+                    "Bloqueio automático de insistência",
+                    "$recent chamada(s) na última hora — abaixo do limiar de $AUTO_BLOCK_INSISTENCE_COUNT"
+                )
+            }
+        }
+
+        // ------------------------------------------------------------------
         // 5. Decisão
         // ------------------------------------------------------------------
         val decision = when {
@@ -412,5 +448,11 @@ class CallRuleEngine(
         /** Limiares de insistência: chamadas nos últimos 60 minutos. */
         const val INSISTENCE_LIGHT_COUNT = 3
         const val INSISTENCE_HEAVY_COUNT = 6
+
+        /** Bloqueio automático: chamadas na última hora que disparam o bloqueio. */
+        const val AUTO_BLOCK_INSISTENCE_COUNT = 5
+
+        /** Nível mínimo de reputação "nuisance" para bloqueio automático. */
+        const val NUISANCE_BLOCK_LEVEL = 60
     }
 }

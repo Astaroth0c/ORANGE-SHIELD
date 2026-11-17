@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -65,6 +67,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun PainelScreen() {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val store = EngineProvider.settingsStore
+    val settings by store.state.collectAsStateWithLifecycle()
     var showCallDisclosure by remember { mutableStateOf(false) }
     var showWhatsAppDisclosure by remember { mutableStateOf(false) }
     var showNotificationDisclosure by remember { mutableStateOf(false) }
@@ -122,6 +127,25 @@ fun PainelScreen() {
         resumeTick++
     }
     val listenerAtivo = remember(resumeTick) { Notifier.isNotificationListenerEnabled(context) }
+
+    fun requestCallScreeningRole() {
+        val manager = context.getSystemService(RoleManager::class.java)
+        when {
+            manager == null -> roleStatusMessage = "Este aparelho não disponibilizou o gerenciador de funções do Android."
+            !manager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) ->
+                roleStatusMessage = "Este aparelho não oferece a função de triagem de chamadas do Android."
+            manager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) ->
+                roleStatusMessage = "A triagem de chamadas já está autorizada neste aparelho."
+            else -> try {
+                callScreeningRoleLauncher.launch(
+                    manager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
+                )
+            } catch (error: Exception) {
+                roleStatusMessage = "Não foi possível abrir a autorização do Android: ${error.message ?: "erro desconhecido"}"
+            }
+        }
+        resumeTick++
+    }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -200,22 +224,7 @@ fun PainelScreen() {
             confirmButton = {
                 TextButton(onClick = {
                     showCallDisclosure = false
-                    val manager = context.getSystemService(RoleManager::class.java)
-                    when {
-                        manager == null -> roleStatusMessage = "Este aparelho não disponibilizou o gerenciador de funções do Android."
-                        !manager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING) ->
-                            roleStatusMessage = "Este aparelho não oferece a função de triagem de chamadas do Android."
-                        manager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) ->
-                            roleStatusMessage = "A triagem de chamadas já está autorizada neste aparelho."
-                        else -> try {
-                            callScreeningRoleLauncher.launch(
-                                manager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
-                            )
-                        } catch (error: Exception) {
-                            roleStatusMessage = "Não foi possível abrir a autorização do Android: ${error.message ?: "erro desconhecido"}"
-                        }
-                    }
-                    resumeTick++
+                    requestCallScreeningRole()
                 }) { Text("Concordo e continuar") }
             },
             dismissButton = {
@@ -234,6 +243,111 @@ fun PainelScreen() {
         Column(modifier = Modifier.entrance(0)) {
             Text("PAINEL DE PROTEÇÃO", color = OrangePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
             Text("Visão geral do escudo", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        }
+
+        // ---- STATUS DO ESCUDO (diagnóstico real) ----
+        val readCallLogGranted = remember(resumeTick) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) ==
+                PackageManager.PERMISSION_GRANTED
+        }
+        val notifGranted = remember(resumeTick) {
+            Build.VERSION.SDK_INT < 33 ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        }
+        val callLogLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { resumeTick++ }
+
+        OrangeGlassCard(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    "STATUS DO ESCUDO",
+                    color = OrangePrimary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp
+                )
+                if (!triagemAtiva) {
+                    Text(
+                        text = if (!triagemSuportada) {
+                            "Este aparelho não suporta triagem de chamadas."
+                        } else {
+                            "A TRIAGEM NÃO ESTÁ ATIVA — o app NÃO pode gerenciar, bloquear nem anunciar chamadas. Ative agora:"
+                        },
+                        color = RedBlock,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (triagemSuportada) {
+                        Button(
+                            onClick = { requestCallScreeningRole() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("ATIVAR TRIAGEM DE CHAMADAS", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                } else {
+                    Text(
+                        "Triagem ativa — o ORANGE SHIELD recebe e decide cada chamada.",
+                        color = EmeraldOk,
+                        fontSize = 13.sp
+                    )
+                }
+                StatusRow(
+                    label = "Triagem de chamadas (ROLE_CALL_SCREENING)",
+                    status = when {
+                        !triagemSuportada -> "não suportado"
+                        triagemAtiva -> "ativa"
+                        else -> "pendente"
+                    },
+                    active = triagemAtiva
+                )
+                StatusRow(
+                    label = "Registro de chamadas (Radar e incômodo recorrente)",
+                    status = if (readCallLogGranted) "concedida" else "pendente",
+                    active = readCallLogGranted
+                )
+                if (!readCallLogGranted) {
+                    TextButton(
+                        onClick = { callLogLauncher.launch(Manifest.permission.READ_CALL_LOG) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Conceder acesso ao registro de chamadas", fontSize = 12.sp) }
+                }
+                StatusRow(
+                    label = "Notificações de alerta",
+                    status = if (notifGranted) "concedida" else "pendente",
+                    active = notifGranted
+                )
+                if (!notifGranted) {
+                    TextButton(
+                        onClick = { showNotificationDisclosure = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Permitir notificações", fontSize = 12.sp) }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Bloqueio automático de insistência", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "5+ chamadas na última hora ou incômodo recorrente confirmado → bloqueia na hora",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = settings.autoBlockNuisance,
+                        onCheckedChange = { checked ->
+                            scope.launch { store.save(settings.copy(autoBlockNuisance = checked)) }
+                        }
+                    )
+                }
+                roleStatusMessage?.let {
+                    Text(it, fontSize = 12.sp, color = OrangePrimary)
+                }
+            }
         }
 
         // ---- Estatísticas ----

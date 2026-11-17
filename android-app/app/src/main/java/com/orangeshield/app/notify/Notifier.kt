@@ -24,6 +24,7 @@ object Notifier {
     const val CHANNEL_WHATSAPP_GUARD = "orange_shield_whatsapp_guard"
 
     private const val BASE_CALL_NOTIFICATION_ID = 1001
+    private const val RINGING_NOTIFICATION_ID = 1003
 
     fun ensureChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
@@ -65,6 +66,44 @@ object Notifier {
         post(context, BASE_CALL_NOTIFICATION_ID + if (blocked) 0 else 1, builder)
     }
 
+    /**
+     * Alerta de TELA CHEIA durante o toque: abre a CallAlertActivity com
+     * veredito, nome do contato e botões reais. Sem a permissão de tela
+     * cheia concedida, aparece como notificação heads-up (IMPORTANCE_HIGH).
+     */
+    fun postRingingAlert(context: Context, number: String?, contactName: String?) {
+        if (!canPost(context)) return
+        val flagged = com.orangeshield.app.voice.RingingCallState.reputationFlagged
+        val title = when {
+            flagged -> "SPAM — Provável tentativa de golpe"
+            !contactName.isNullOrBlank() -> "Chamada de $contactName"
+            !number.isNullOrBlank() -> "Chamada recebida"
+            else -> "Número desconhecido ligando"
+        }
+        val intent = Intent(context, com.orangeshield.app.ui.CallAlertActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra(EXTRA_NUMBER, number)
+        }
+        val pi = PendingIntent.getActivity(
+            context, RINGING_NOTIFICATION_ID, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        val builder = Notification.Builder(context, CHANNEL_CALL_GUARD)
+            .setSmallIcon(R.drawable.ic_shield)
+            .setContentTitle(title)
+            .setContentText(number ?: "Número desconhecido")
+            .setCategory(Notification.CATEGORY_CALL)
+            .setFullScreenIntent(pi, true)
+            .setContentIntent(pi)
+            .setOngoing(true)
+        post(context, RINGING_NOTIFICATION_ID, builder)
+    }
+
+    fun cancelRingingAlert(context: Context) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager?.cancel(RINGING_NOTIFICATION_ID)
+    }
+
     fun postWhatsAppAlert(
         context: Context,
         title: String,
@@ -91,6 +130,8 @@ object Notifier {
         }
         post(context, notificationId, builder)
     }
+
+    const val EXTRA_NUMBER = "orange_ringing_number"
 
     private fun canPost(context: Context): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&

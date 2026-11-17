@@ -12,7 +12,6 @@ import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
-import android.provider.ContactsContract
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -86,13 +85,19 @@ class VoiceCallService : Service(), RecognitionListener {
         val action = intent?.action ?: ACTION_START
         when (action) {
             ACTION_START -> {
-                startInForeground()
+                val inForeground = startInForeground()
                 handled = false
                 announceVerdict()
                 scope.launch {
                     delay(ANNOUNCE_DELAY_MS)
-                    startListening()
-                    watchCallState()
+                    if (inForeground) {
+                        startListening()
+                        watchCallState()
+                    } else {
+                        // Android bloqueou o serviço em segundo plano: o
+                        // anúncio por TTS já saiu; encerramos limpo.
+                        stopSelf()
+                    }
                 }
             }
             ACTION_STOP -> stopSelf()
@@ -100,7 +105,7 @@ class VoiceCallService : Service(), RecognitionListener {
         return START_NOT_STICKY
     }
 
-    private fun startInForeground() {
+    private fun startInForeground(): Boolean {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "ORANGE VOICE", NotificationManager.IMPORTANCE_LOW)
@@ -116,21 +121,29 @@ class VoiceCallService : Service(), RecognitionListener {
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .build()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            true
+        } catch (_: Exception) {
+            // ForegroundServiceStartNotAllowedException / restrição de tipo:
+            // sem serviço em primeiro plano neste aparelho neste momento.
+            false
         }
     }
 
     /** Fala o veredito da triagem enquanto o telefone toca. */
     private fun announceVerdict() {
+        if (RingingCallState.announced) return
         val state = RingingCallState
-        val contact = contactName(state.ringingNumber)
+        val contact = ContactLookup.name(this, state.ringingNumber)
         val script = when {
             state.reputationFlagged || state.screeningDecision == "WARN" ->
                 "Atenção. Spam. Provável tentativa de golpe."
@@ -139,30 +152,8 @@ class VoiceCallService : Service(), RecognitionListener {
                 "Número desconhecido ligando."
             else -> return
         }
+        RingingCallState.announced = true
         speak("$script Diga: cancelar chamada, ou: atender.")
-    }
-
-    /** Nome do contato na agenda para o número tocando (PhoneLookup normalizado). */
-    private fun contactName(number: String?): String? {
-        if (number.isNullOrBlank()) return null
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CONTACTS)
-            != PackageManager.PERMISSION_GRANTED
-        ) return null
-        return runCatching {
-            val uri = ContactsContract.PhoneLookup.CONTENT_FILTER_URI
-                .buildUpon()
-                .appendPath(number)
-                .build()
-            contentResolver.query(
-                uri,
-                arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME),
-                null,
-                null,
-                null
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) cursor.getString(0) else null
-            }
-        }.getOrNull()
     }
 
     private fun speak(text: String) {
