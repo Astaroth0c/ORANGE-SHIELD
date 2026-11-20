@@ -13,9 +13,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.orangeshield.app.R
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -39,7 +39,7 @@ fun OrangeSplashScreen() {
                     .border(1.dp, OrangePrimary.copy(alpha = 0.65f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.Shield, contentDescription = "ORANGE-SHIELD", tint = OrangePrimary, modifier = Modifier.size(88.dp))
+                Image(painter = painterResource(R.drawable.ic_shield), contentDescription = "ORANGE-SHIELD", modifier = Modifier.size(88.dp))
             }
             Text("ORANGE", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
             Text("SHIELD", color = OrangePrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 7.sp)
