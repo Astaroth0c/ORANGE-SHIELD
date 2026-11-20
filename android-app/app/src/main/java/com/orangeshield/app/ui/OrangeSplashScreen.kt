@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Shield
@@ -31,7 +32,7 @@ fun OrangeSplashScreen() {
     val transition = rememberInfiniteTransition(label = "orange-splash")
     val pulse = transition.animateFloat(0.88f, 1.08f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "pulse")
     val glow = transition.animateFloat(0.22f, 0.72f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "glow")
-    Box(Modifier.background(Brush.radialGradient(listOf(Color(0xFF392013), Color(0xFF151014), DarkBackground))).then(Modifier), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Color(0xFF392013), Color(0xFF151014), DarkBackground))), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Box(
                 Modifier.size(148.dp).scale(pulse.value).background(Color(0xFF24140D).copy(alpha = glow.value), CircleShape)
