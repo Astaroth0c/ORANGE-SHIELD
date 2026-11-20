@@ -30,7 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -128,10 +127,6 @@ fun OrangeShieldApp() {
                         Column(Modifier.weight(1f)) {
                             Text("ORANGE SHIELD", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = OrangePrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text("Proteção inteligente · v$appVersion", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(start = 8.dp, end = 4.dp)) {
-                            Text("Proteção", fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Switch(checked = settings.protectionActive, onCheckedChange = { checked -> scope.launch { store.save(settings.copy(protectionActive = checked)) } })
                         }
                     }
                 },
