@@ -13,22 +13,16 @@ android {
         applicationId = "com.orangeshield.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 20
-        versionName = "2.10.0"
+        versionCode = 21
+        versionName = "2.11.0"
     }
 
-    // Release signing is injected only by the build environment.
-    // Never commit keystores or passwords to the repository.
     val signingStoreFile = providers.environmentVariable("ORANGE_SIGNING_STORE_FILE").orNull
     val signingStorePassword = providers.environmentVariable("ORANGE_SIGNING_STORE_PASSWORD").orNull
     val signingKeyAlias = providers.environmentVariable("ORANGE_SIGNING_KEY_ALIAS").orNull
     val signingKeyPassword = providers.environmentVariable("ORANGE_SIGNING_KEY_PASSWORD").orNull
 
-    if (!signingStoreFile.isNullOrBlank() &&
-        !signingStorePassword.isNullOrBlank() &&
-        !signingKeyAlias.isNullOrBlank() &&
-        !signingKeyPassword.isNullOrBlank()
-    ) {
+    if (!signingStoreFile.isNullOrBlank() && !signingStorePassword.isNullOrBlank() && !signingKeyAlias.isNullOrBlank() && !signingKeyPassword.isNullOrBlank()) {
         signingConfigs {
             create("release") {
                 storeFile = file(signingStoreFile)
@@ -45,10 +39,7 @@ android {
             if (!signingStoreFile.isNullOrBlank() && !signingStorePassword.isNullOrBlank() && !signingKeyAlias.isNullOrBlank() && !signingKeyPassword.isNullOrBlank()) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -56,50 +47,28 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    buildFeatures {
-        compose = true
-    }
+    kotlinOptions { jvmTarget = "17" }
+    buildFeatures { compose = true }
 }
 
 dependencies {
-    // Compose — o BOM alinha todas as versões da UI
     implementation(platform("androidx.compose:compose-bom:2024.09.02"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    // Ícones estendidos (Shield, PhoneInTalk, Block e Chat pertencem ao conjunto estendido)
     implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
-
     implementation("androidx.core:core-ktx:1.13.1")
-
-    // Activity / Lifecycle
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6")
-
-    // Navigation — NavHost com as 4 telas
     implementation("androidx.navigation:navigation-compose:2.8.1")
-
-    // Room — histórico de triagem, reputação, listas pessoais e eventos WhatsApp
     implementation("androidx.room:room-runtime:2.7.0")
     implementation("androidx.room:room-ktx:2.7.0")
     ksp("androidx.room:room-compiler:2.7.0")
-
-    // Validação de numeração internacional e plano telefônico atualizado
     implementation("com.googlecode.libphonenumber:libphonenumber:9.0.43")
-    // ORANGE LENS — dados offline reais: praça/região e operadora de origem do prefixo
     implementation("com.googlecode.libphonenumber:geocoder:3.43")
     implementation("com.googlecode.libphonenumber:carrier:2.43")
-
-    // Testes unitários do motor
     testImplementation("junit:junit:4.13.2")
-
-    // Corrotinas
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
