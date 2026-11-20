@@ -2,6 +2,8 @@ package com.orangeshield.app.ui
 
 import android.Manifest
 import android.app.Activity
+import android.app.NotificationManager
+import android.net.Uri
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
@@ -247,6 +249,16 @@ fun SettingsScreen() {
             }, modifier = Modifier.fillMaxWidth(), enabled = screeningSupported && !screeningActive) { Text(if (screeningActive) "Triagem autorizada" else "Ativar triagem de chamadas") }
             SettingStatus("Registro de chamadas", permissionGranted(context, Manifest.permission.READ_CALL_LOG), "Concedida")
             Button(onClick = { requestPermission(Manifest.permission.READ_CALL_LOG) }, modifier = Modifier.fillMaxWidth()) { Text("Permitir leitura do histórico (opcional)") }
+            SettingStatus("Estado do telefone (alerta de chamada)", permissionGranted(context, Manifest.permission.READ_PHONE_STATE), "Concedida")
+            Button(onClick = { requestPermission(Manifest.permission.READ_PHONE_STATE) }, modifier = Modifier.fillMaxWidth()) { Text("Permitir detectar quando o telefone toca") }
+            if (Build.VERSION.SDK_INT >= 34) {
+                val fullScreenAllowed = context.getSystemService(NotificationManager::class.java)?.canUseFullScreenIntent() == true
+                SettingStatus("Tela de chamada sobre o bloqueio", if (fullScreenAllowed) "Permitida" else "Aguardando autorização", fullScreenAllowed)
+                Button(onClick = {
+                    runCatching { context.startActivity(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${context.packageName}"))) }
+                        .onFailure { roleMessage = "Não foi possível abrir a autorização de tela cheia." }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Configurar tela de atendimento em tela cheia") }
+            }
             SettingStatus("Contatos", permissionGranted(context, Manifest.permission.READ_CONTACTS), "Concedida")
             Button(onClick = { requestPermission(Manifest.permission.READ_CONTACTS) }, modifier = Modifier.fillMaxWidth()) { Text("Permitir identificação de contatos") }
             SettingStatus("Microfone", permissionGranted(context, Manifest.permission.RECORD_AUDIO), "Concedida")
