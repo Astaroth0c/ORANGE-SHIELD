@@ -34,6 +34,11 @@ fun PainelScreen() {
     val warned by dao.countByDecision("WARN").collectAsStateWithLifecycle(initialValue = 0)
     val allowed by dao.countByDecision("ALLOW").collectAsStateWithLifecycle(initialValue = 0)
     val silenced by dao.countByDecision("SILENCE").collectAsStateWithLifecycle(initialValue = 0)
+    val spoofFlagged by dao.countByCategory("spoofing").collectAsStateWithLifecycle(initialValue = 0)
+    val historyCandidates by EngineProvider.database.historyCandidateDao().observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    val historyCalls = historyCandidates.sumOf { it.totalCalls }
+    val historyNumbers = historyCandidates.size
+    val historyToReview = historyCandidates.count { it.totalCalls >= 4 || it.blockedCalls > 0 }
     val recent by dao.listRecent(5).collectAsStateWithLifecycle(initialValue = emptyList())
     val roleManager = remember { context.getSystemService(RoleManager::class.java) }
     val screeningActive = remember { roleManager?.isRoleHeld(RoleManager.ROLE_CALL_SCREENING) == true }
@@ -57,7 +62,11 @@ fun PainelScreen() {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             DashboardMetric("Alertadas", warned, Modifier.weight(1f))
-            DashboardMetric("Permitidas", allowed + silenced, Modifier.weight(1f))
+            DashboardMetric("Permitidas", allowed, Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            DashboardMetric("Silenciadas", silenced, Modifier.weight(1f))
+            DashboardMetric("Spoofing", spoofFlagged, Modifier.weight(1f))
         }
         ElevatedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
