@@ -13,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -218,7 +219,7 @@ fun SettingsScreen() {
 }
 
 @Composable
-private fun SettingsGroup(title: String, subtitle: String, content: @Composable Column.() -> Unit) {
+private fun SettingsGroup(title: String, subtitle: String, content: @Composable ColumnScope.() -> Unit) {
     ElevatedCard(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(title, color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
