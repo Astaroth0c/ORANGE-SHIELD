@@ -60,8 +60,22 @@ fun SettingsScreen() {
     var blockThreshold by remember(settings.blockThreshold) { mutableStateOf(settings.blockThreshold.toFloat()) }
     var warnThreshold by remember(settings.warnThreshold) { mutableStateOf(settings.warnThreshold.toFloat()) }
     var voiceTest by remember { mutableStateOf<String?>(null) }
+    var chainHeight by remember { mutableStateOf<Long?>(null) }
+    var chainPending by remember { mutableStateOf<Int?>(null) }
+    var chainNodeId by remember { mutableStateOf("") }
+    var chainStatus by remember { mutableStateOf<String?>(null) }
+    var chainBusy by remember { mutableStateOf(false) }
     var roleMessage by remember { mutableStateOf<String?>(null) }
     var showPrivacy by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        runCatching {
+            com.orangeshield.app.chain.ChainNode.ensureGenesis(context)
+            chainNodeId = com.orangeshield.app.chain.ChainNode.nodeId(context)
+            chainHeight = com.orangeshield.app.chain.ChainNode.localHeight(context)
+            chainPending = com.orangeshield.app.chain.ChainNode.pendingCount(context)
+        }
+    }
 
     LifecycleResumeEffect(Unit) {
         resumeTick++
@@ -168,17 +182,45 @@ fun SettingsScreen() {
         }
 
         SettingsGroup("ORANGE CHAIN · rede comunitária", "Compartilhamento assinado e sincronização local") {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column { Text("${chainHeight ?: "…"}", color = OrangePrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp); Text("altura da cadeia", color = MutedOnDark, fontSize = 10.sp) }
+                Column { Text("${chainPending ?: "…"}", color = AmberWarn, fontWeight = FontWeight.Bold, fontSize = 20.sp); Text("denúncias pendentes", color = MutedOnDark, fontSize = 10.sp) }
+                Text("NÓ ${chainNodeId.ifBlank { "…" }}", color = MutedOnDark, fontSize = 9.sp)
+            }
             SettingSwitch("Compartilhar bloqueios", "Publica denúncias pseudônimas e assinadas na rede comunitária.", settings.chainShare) { save(settings.copy(chainShare = it)) }
             SettingSwitch("Mesh local", "Permite sincronização direta entre aparelhos na mesma rede Wi-Fi.", settings.chainMesh) { save(settings.copy(chainMesh = it)) }
             Button(onClick = {
                 scope.launch {
+                    chainBusy = true
                     runCatching {
                         com.orangeshield.app.chain.ChainNode.ensureGenesis(context)
                         val result = com.orangeshield.app.chain.ChainTransport.pull(context)
-                        Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
-                    }.onFailure { Toast.makeText(context, "Falha na sincronização: ${it.message}", Toast.LENGTH_LONG).show() }
+                        var message = result.message
+                        if (settings.chainMesh) message += "\\nMesh: ${com.orangeshield.app.chain.ChainTransport.meshSync(context).message}"
+                        chainStatus = message
+                    }.onFailure { chainStatus = "Falha na sincronização: ${it.message}" }
+                    chainHeight = com.orangeshield.app.chain.ChainNode.localHeight(context)
+                    chainPending = com.orangeshield.app.chain.ChainNode.pendingCount(context)
+                    chainBusy = false
                 }
-            }, modifier = Modifier.fillMaxWidth()) { Text("Sincronizar e validar cadeia") }
+            }, enabled = !chainBusy, modifier = Modifier.fillMaxWidth()) { Text(if (chainBusy) "VALIDANDO…" else "Sincronizar e validar cadeia") }
+            Button(onClick = {
+                scope.launch {
+                    chainBusy = true
+                    runCatching {
+                        val publication = com.orangeshield.app.chain.ChainTransport.publishLocalBlock(context)
+                        chainStatus = publication.message
+                        publication.issueUrl?.let { url ->
+                            com.orangeshield.app.chain.ChainTransport.openIssuePage(context, url)
+                            com.orangeshield.app.chain.ChainNode.clearPending(context)
+                        }
+                    }.onFailure { chainStatus = "Falha ao publicar: ${it.message}" }
+                    chainHeight = com.orangeshield.app.chain.ChainNode.localHeight(context)
+                    chainPending = com.orangeshield.app.chain.ChainNode.pendingCount(context)
+                    chainBusy = false
+                }
+            }, enabled = !chainBusy && (chainPending ?: 0) > 0, modifier = Modifier.fillMaxWidth()) { Text("Publicar ${chainPending ?: 0} denúncia(s) assinada(s)") }
+            chainStatus?.let { Text(it, color = OrangeSecondary, fontSize = 11.sp) }
         }
 
         SettingsGroup("WhatsApp Guard", "Preferências de análise das notificações do WhatsApp") {
