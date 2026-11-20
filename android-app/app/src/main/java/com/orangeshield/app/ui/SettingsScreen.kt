@@ -69,6 +69,9 @@ fun SettingsScreen() {
     var chainBusy by remember { mutableStateOf(false) }
     var roleMessage by remember { mutableStateOf<String?>(null) }
     var showPrivacy by remember { mutableStateOf(false) }
+    var showCallDisclosure by remember { mutableStateOf(false) }
+    var showWhatsAppDisclosure by remember { mutableStateOf(false) }
+    var showNotificationDisclosure by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         runCatching {
@@ -105,6 +108,54 @@ fun SettingsScreen() {
         if (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(context, "Essa permissão já está concedida.", Toast.LENGTH_SHORT).show()
         } else permissionLauncher.launch(permission)
+    }
+
+    if (showCallDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showCallDisclosure = false },
+            title = { Text("Triagem inteligente de chamadas") },
+            text = { Text("Ao ativar, o Android entrega ao ORANGE-SHIELD os números das chamadas recebidas para análise local de formato, frequência e sinais de spoofing. O histórico guarda número, pontuação, decisão e evidências no aparelho. A triagem só passa a funcionar depois que você concede ROLE_CALL_SCREENING no diálogo do Android. Você pode retirar essa autorização nas configurações do sistema.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showCallDisclosure = false
+                    if (screeningSupported && !screeningActive) {
+                        runCatching { callRoleLauncher.launch(roleManager!!.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)) }
+                            .onFailure { roleMessage = "Não foi possível abrir a autorização: ${it.message}" }
+                    }
+                }) { Text("Concordo e continuar") }
+            },
+            dismissButton = { TextButton(onClick = { showCallDisclosure = false }) { Text("Agora não") } }
+        )
+    }
+    if (showWhatsAppDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showWhatsAppDisclosure = false },
+            title = { Text("Guardião WhatsApp: acesso às notificações") },
+            text = { Text("Para detectar mensagens suspeitas, o app lê título e texto das notificações somente dos pacotes WhatsApp e WhatsApp Business. A análise ocorre localmente; o texto original não é armazenado nem enviado a servidores. O histórico guarda remetente, decisão, pontuação e motivo. Você pode recusar e continuar usando a proteção de chamadas.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    context.getSharedPreferences("orange_shield_privacy", Context.MODE_PRIVATE)
+                        .edit().putBoolean("whatsapp_notification_access_consent", true).apply()
+                    showWhatsAppDisclosure = false
+                    runCatching { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+                }) { Text("Concordo e abrir configurações") }
+            },
+            dismissButton = { TextButton(onClick = { showWhatsAppDisclosure = false }) { Text("Agora não") } }
+        )
+    }
+    if (showNotificationDisclosure) {
+        AlertDialog(
+            onDismissRequest = { showNotificationDisclosure = false },
+            title = { Text("Notificações do ORANGE-SHIELD") },
+            text = { Text("Esta permissão permite exibir alertas locais quando uma chamada for bloqueada ou identificada como suspeita. Sem ela, a triagem continua ativa, mas os avisos do aplicativo podem não aparecer.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showNotificationDisclosure = false
+                    requestPermission(Manifest.permission.POST_NOTIFICATIONS)
+                }) { Text("Permitir notificações") }
+            },
+            dismissButton = { TextButton(onClick = { showNotificationDisclosure = false }) { Text("Agora não") } }
+        )
     }
 
     if (showPrivacy) {
@@ -244,7 +295,7 @@ fun SettingsScreen() {
                 when {
                     !screeningSupported -> roleMessage = "Este aparelho não oferece ROLE_CALL_SCREENING."
                     screeningActive -> roleMessage = "A triagem já está autorizada."
-                    else -> callRoleLauncher.launch(roleManager!!.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING))
+                    else -> showCallDisclosure = true
                 }
             }, modifier = Modifier.fillMaxWidth(), enabled = screeningSupported && !screeningActive) { Text(if (screeningActive) "Triagem autorizada" else "Ativar triagem de chamadas") }
             SettingStatus("Registro de chamadas", permissionGranted(context, Manifest.permission.READ_CALL_LOG), "Concedida")
@@ -264,7 +315,7 @@ fun SettingsScreen() {
             SettingStatus("Microfone", permissionGranted(context, Manifest.permission.RECORD_AUDIO), "Concedida")
             Button(onClick = { requestPermission(Manifest.permission.RECORD_AUDIO) }, modifier = Modifier.fillMaxWidth()) { Text("Permitir microfone para ORANGE VOICE") }
             if (Build.VERSION.SDK_INT >= 33) {
-                Button(onClick = { requestPermission(Manifest.permission.POST_NOTIFICATIONS) }, modifier = Modifier.fillMaxWidth()) { Text("Permitir notificações") }
+                Button(onClick = { showNotificationDisclosure = true }, modifier = Modifier.fillMaxWidth()) { Text("Permitir notificações") }
             }
             roleMessage?.let { Text(it, color = OrangeSecondary, fontSize = 12.sp) }
             TextButton(onClick = { showPrivacy = true }) { Text("Sobre permissões e privacidade") }
