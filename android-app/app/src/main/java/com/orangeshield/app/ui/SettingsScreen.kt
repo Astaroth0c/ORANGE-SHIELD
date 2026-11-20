@@ -57,6 +57,8 @@ fun SettingsScreen() {
     val scope = rememberCoroutineScope()
     var resumeTick by remember { mutableIntStateOf(0) }
     var ownNumber by remember(settings.ownNumber) { mutableStateOf(settings.ownNumber) }
+    var blockThreshold by remember(settings.blockThreshold) { mutableStateOf(settings.blockThreshold.toFloat()) }
+    var warnThreshold by remember(settings.warnThreshold) { mutableStateOf(settings.warnThreshold.toFloat()) }
     var voiceTest by remember { mutableStateOf<String?>(null) }
     var roleMessage by remember { mutableStateOf<String?>(null) }
     var showPrivacy by remember { mutableStateOf(false) }
@@ -127,9 +129,9 @@ fun SettingsScreen() {
 
         SettingsGroup("Sensibilidade do detector", "Ajuste os limites de pontuação de risco") {
             Text("Limite para bloquear: ${settings.blockThreshold}", color = LightOnDark, fontWeight = FontWeight.SemiBold)
-            Slider(value = settings.blockThreshold.toFloat(), onValueChange = { save(settings.copy(blockThreshold = it.toInt().coerceIn(1, 100))) }, valueRange = 1f..100f)
+            Slider(value = blockThreshold, onValueChange = { blockThreshold = it }, onValueChangeFinished = { save(settings.copy(blockThreshold = blockThreshold.toInt().coerceIn(1, 100))) }, valueRange = 1f..100f)
             Text("Limite para alertar: ${settings.warnThreshold}", color = LightOnDark, fontWeight = FontWeight.SemiBold)
-            Slider(value = settings.warnThreshold.toFloat(), onValueChange = { save(settings.copy(warnThreshold = it.toInt().coerceIn(0, 99))) }, valueRange = 0f..99f)
+            Slider(value = warnThreshold, onValueChange = { warnThreshold = it }, onValueChangeFinished = { save(settings.copy(warnThreshold = warnThreshold.toInt().coerceIn(0, 99))) }, valueRange = 0f..99f)
             Text("Os limites são aplicados pelo motor local. Valores mais baixos tornam a triagem mais sensível.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
         }
 
